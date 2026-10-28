@@ -51,10 +51,10 @@ function MemoContent({ content }: { content: string }) {
   const parts = content.split(/(#[\p{L}\p{N}_-]+)/gu);
 
   return (
-    <p className="whitespace-pre-wrap break-words text-[14.5px] leading-relaxed text-zinc-200">
+    <p className="whitespace-pre-wrap break-words text-[14.5px] leading-relaxed text-zinc-100">
       {parts.map((part, index) =>
         part.startsWith('#') ? (
-          <span key={index} className="font-medium text-amber-300/90">
+          <span key={index} className="memo-hashtag">
             {part}
           </span>
         ) : (
@@ -74,7 +74,7 @@ export function MemoCard({ memo, index = 0 }: MemoCardProps) {
 
   return (
     <article
-      className="group animate-rise-in overflow-hidden rounded-2xl border border-zinc-800/80 bg-zinc-900/70 p-4 shadow-lg shadow-black/10 transition-colors hover:border-zinc-700/80 hover:bg-zinc-900/90"
+      className="group animate-rise-in overflow-hidden rounded-2xl border border-lumos-line/80 bg-lumos-surface/70 p-4 shadow-panel transition-colors duration-300 ease-glide hover:border-lumos-line-strong hover:bg-lumos-surface/90"
       style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
     >
       <div className="mb-2.5 flex items-center justify-between gap-3">
@@ -107,7 +107,7 @@ export function MemoCard({ memo, index = 0 }: MemoCardProps) {
           {extraTags.map((tag) => (
             <span
               key={tag}
-              className="rounded-md border border-zinc-700/50 bg-zinc-800/60 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400"
+              className="rounded-md border border-lumos-line/80 bg-lumos-elevated/80 px-1.5 py-0.5 text-[10px] font-medium text-zinc-300 transition-colors duration-200 hover:border-lumos-accent/30 hover:text-zinc-100"
             >
               #{tag}
             </span>

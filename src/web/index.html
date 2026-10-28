@@ -19,6 +19,20 @@
       rel="stylesheet"
     />
     <title>LUMOS · Quick Dump</title>
+    <script>
+      // Apply the saved theme before first paint so the OLED canvas never flashes.
+      (function () {
+        var theme = 'sakura';
+        try {
+          if (localStorage.getItem('lumos-theme') === 'forest') theme = 'forest';
+        } catch (error) {
+          // Storage unavailable: keep the Sakura default.
+        }
+        document.documentElement.dataset.theme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'forest' ? '#090a09' : '#09090b');
+      })();
+    </script>
   </head>
   <body class="h-full">
     <div id="root"></div>

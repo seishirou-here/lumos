@@ -154,13 +154,14 @@ export default function App() {
   );
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden bg-zinc-950">
+    <div className="relative min-h-dvh overflow-x-hidden bg-lumos-bg transition-colors duration-300">
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] bg-[radial-gradient(60%_80%_at_50%_0%,rgba(251,191,36,0.1),transparent_70%)]"
+        className="ambient-glow pointer-events-none fixed inset-x-0 top-0 h-[420px]"
       />
+      <div aria-hidden="true" className="grain pointer-events-none fixed inset-0" />
 
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 sm:px-6">
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 sm:px-6">
         <Header status={connection} pendingCount={pendingCount} />
 
         <main className="flex-1">
@@ -168,7 +169,7 @@ export default function App() {
           <MemoStream memos={memos} isLoading={isHydrating} />
         </main>
 
-        <footer className="pb-safe pt-2 text-center text-[10px] tracking-wide text-zinc-700">
+        <footer className="pb-safe pt-2 text-center text-[10px] tracking-wide text-zinc-500">
           Offline-first · disinkronkan ke laptop lewat Tailscale
         </footer>
       </div>

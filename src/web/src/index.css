@@ -3,23 +3,99 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* Sakura is the default so the UI still reads correctly without JS. */
+  :root,
+  [data-theme='sakura'] {
     color-scheme: dark;
+
+    --lumos-bg: 9 9 11; /* #09090b */
+    --lumos-surface: 13 11 14; /* #0d0b0e */
+    --lumos-elevated: 20 17 20; /* #141114 */
+    --lumos-line: 45 39 43; /* #2d272b */
+    --lumos-line-strong: 63 53 59; /* #3f353b */
+    --lumos-accent: 251 113 133; /* #fb7185 · rose-400 */
+    --lumos-accent-soft: 253 164 175; /* #fda4af · rose-300 */
+    --lumos-accent-strong: 244 63 94; /* #f43f5e · rose-500 */
+    --lumos-accent-ink: 32 9 15; /* #20090f */
+    --lumos-glow: 251 113 133;
+  }
+
+  [data-theme='forest'] {
+    color-scheme: dark;
+
+    --lumos-bg: 9 10 9; /* #090a09 */
+    --lumos-surface: 11 15 12; /* #0b0f0c */
+    --lumos-elevated: 16 22 18; /* #101612 */
+    --lumos-line: 35 46 39; /* #232e27 */
+    --lumos-line-strong: 52 68 57; /* #344439 */
+    --lumos-accent: 52 211 153; /* #34d399 · emerald-400 */
+    --lumos-accent-soft: 110 231 183; /* #6ee7b7 · emerald-300 */
+    --lumos-accent-strong: 16 185 129; /* #10b981 · emerald-500 */
+    --lumos-accent-ink: 3 22 15; /* #03160f */
+    --lumos-glow: 16 185 129;
   }
 
   html {
     -webkit-tap-highlight-color: transparent;
     text-rendering: optimizeLegibility;
+    background-color: rgb(var(--lumos-bg));
   }
 
   body {
-    @apply bg-zinc-950 font-sans text-zinc-100 antialiased;
+    @apply font-sans text-zinc-100 antialiased;
+    background-color: rgb(var(--lumos-bg));
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     overscroll-behavior-y: none;
+    transition:
+      background-color 380ms ease,
+      color 380ms ease;
   }
 
   ::selection {
-    @apply bg-amber-400/25 text-amber-50;
+    background-color: rgb(var(--lumos-accent) / 0.32);
+    color: rgb(var(--lumos-accent-soft));
+  }
+
+  @supports (scrollbar-color: auto) {
+    html {
+      scrollbar-color: rgb(var(--lumos-line-strong)) rgb(var(--lumos-bg));
+    }
+  }
+}
+
+@layer components {
+  /* Single ambient wash at the top of the viewport, tinted per theme. */
+  .ambient-glow {
+    background-image: radial-gradient(
+      70% 82% at 50% -8%,
+      rgb(var(--lumos-glow) / 0.07),
+      transparent 72%
+    );
+  }
+
+  .brand-mark {
+    color: rgb(var(--lumos-accent));
+    filter: drop-shadow(0 0 12px rgb(var(--lumos-accent) / 0.45));
+  }
+
+  .memo-hashtag {
+    @apply font-medium;
+  }
+
+  [data-theme='sakura'] .memo-hashtag {
+    @apply text-rose-400;
+  }
+
+  [data-theme='forest'] .memo-hashtag {
+    @apply text-emerald-400;
+  }
+
+  /* Barely-there film grain: keeps the OLED black from feeling synthetic. */
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    opacity: 0.022;
+    mix-blend-mode: screen;
   }
 }
 

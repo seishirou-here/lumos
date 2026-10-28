@@ -95,10 +95,10 @@ export function Composer({ onSubmit }: ComposerProps) {
     <section aria-label="Quick dump composer" className="mb-8">
       <div
         className={cn(
-          'overflow-hidden rounded-2xl border bg-zinc-900/80 shadow-2xl shadow-black/30 backdrop-blur transition-colors duration-200',
+          'overflow-hidden rounded-2xl border bg-lumos-surface/80 shadow-panel backdrop-blur transition-colors duration-300 ease-glide',
           isFocused
-            ? 'border-amber-400/30 ring-1 ring-amber-400/10'
-            : 'border-zinc-800 hover:border-zinc-700/80',
+            ? 'border-lumos-accent/40 ring-1 ring-lumos-accent/15'
+            : 'border-lumos-line hover:border-lumos-line-strong',
         )}
       >
         <label htmlFor="memo-composer" className="sr-only">
@@ -116,21 +116,21 @@ export function Composer({ onSubmit }: ComposerProps) {
           rows={3}
           maxLength={MAX_LENGTH}
           placeholder="Tulis apa pun yang melintas, Paa..."
-          className="min-h-[92px] w-full resize-none bg-transparent px-4 pb-2 pt-4 text-[15px] leading-relaxed text-zinc-100 caret-amber-300 placeholder:text-zinc-600 focus:outline-none sm:text-base"
+          className="min-h-[92px] w-full resize-none bg-transparent px-4 pb-2 pt-4 text-[15px] leading-relaxed text-zinc-100 caret-lumos-accent placeholder:text-zinc-500 focus:outline-none sm:text-base"
         />
 
-        <div className="flex items-center justify-between gap-2 border-t border-zinc-800/70 px-2.5 py-2">
+        <div className="flex items-center justify-between gap-2 border-t border-lumos-line/60 px-2.5 py-2">
           <div className="flex min-w-0 items-center gap-1">
             <button
               type="button"
               onClick={insertTagToken}
-              className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800/70 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/40"
+              className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-xs font-medium text-zinc-400 transition-colors duration-200 hover:bg-lumos-elevated hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lumos-accent/45 active:scale-[0.98]"
               aria-label="Sisipkan tag"
             >
               <Hash className="h-4 w-4" aria-hidden="true" />
               Tag
             </button>
-            <span className="hidden truncate pl-1 text-[11px] text-zinc-600 sm:inline">
+            <span className="hidden truncate pl-1 text-[11px] text-zinc-500 sm:inline">
               Ctrl/⌘ + Enter
             </span>
           </div>
@@ -139,7 +139,7 @@ export function Composer({ onSubmit }: ComposerProps) {
             type="button"
             onClick={() => void submit()}
             disabled={!canSubmit}
-            className="group flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2 text-[13px] font-semibold text-zinc-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-300 active:scale-[0.97] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 disabled:shadow-none"
+            className="group flex items-center gap-2 rounded-xl bg-lumos-accent px-4 py-2 text-[13px] font-semibold text-lumos-accent-ink shadow-lg shadow-lumos-accent/25 transition-all duration-200 ease-glide hover:bg-lumos-accent-soft active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-lumos-elevated disabled:text-zinc-500 disabled:shadow-none"
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -154,9 +154,9 @@ export function Composer({ onSubmit }: ComposerProps) {
         </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-4 px-1 text-[11px] text-zinc-600">
+      <div className="mt-2 flex items-center justify-between gap-4 px-1 text-[11px] text-zinc-500">
         <span>Offline-first · tersimpan di perangkat</span>
-        <span className={cn(value.length > MAX_LENGTH * 0.9 && 'text-amber-400')}>
+        <span className={cn(value.length > MAX_LENGTH * 0.9 && 'font-medium text-lumos-accent')}>
           {value.length}/{MAX_LENGTH}
         </span>
       </div>

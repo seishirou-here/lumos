@@ -15,14 +15,14 @@ function StreamSkeleton() {
       {[0, 1].map((item) => (
         <div
           key={item}
-          className="animate-soft-pulse rounded-2xl border border-zinc-800/70 bg-zinc-900/50 p-4"
+          className="animate-soft-pulse rounded-2xl border border-lumos-line/70 bg-lumos-surface/50 p-4"
         >
           <div className="mb-3 flex items-center justify-between">
-            <div className="h-2.5 w-16 rounded-full bg-zinc-800" />
-            <div className="h-4 w-16 rounded-full bg-zinc-800/80" />
+            <div className="h-2.5 w-16 rounded-full bg-lumos-line/60" />
+            <div className="h-4 w-16 rounded-full bg-lumos-line/40" />
           </div>
-          <div className="h-3 w-11/12 rounded-full bg-zinc-800/80" />
-          <div className="mt-2 h-3 w-2/3 rounded-full bg-zinc-800/60" />
+          <div className="h-3 w-11/12 rounded-full bg-lumos-line/60" />
+          <div className="mt-2 h-3 w-2/3 rounded-full bg-lumos-line/40" />
         </div>
       ))}
     </div>
@@ -31,12 +31,12 @@ function StreamSkeleton() {
 
 function EmptyStream() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-800/80 px-6 py-12 text-center">
-      <div className="mb-3 grid h-11 w-11 place-items-center rounded-full bg-amber-400/5 text-amber-300/70 ring-1 ring-inset ring-amber-400/10">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-lumos-line/90 px-6 py-12 text-center">
+      <div className="mb-3 grid h-11 w-11 place-items-center rounded-full bg-lumos-accent/5 text-lumos-accent/80 ring-1 ring-inset ring-lumos-accent/15">
         <Sparkles className="h-5 w-5" aria-hidden="true" />
       </div>
-      <p className="text-sm font-medium text-zinc-400">Belum ada memo</p>
-      <p className="mt-1 max-w-[28ch] text-xs leading-relaxed text-zinc-600">
+      <p className="text-sm font-medium text-zinc-300">Belum ada memo</p>
+      <p className="mt-1 max-w-[28ch] text-xs leading-relaxed text-zinc-500">
         Tulis ide pertama di atas. Semua dump tersimpan aman di perangkat ini.
       </p>
     </div>
@@ -55,10 +55,10 @@ export function MemoStream({ memos, isLoading = false }: MemoStreamProps) {
         </h2>
         <span
           aria-hidden="true"
-          className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent"
+          className="h-px flex-1 bg-gradient-to-r from-lumos-line to-transparent"
         />
         {!isLoading && memos.length > 0 && (
-          <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[10px] font-medium text-zinc-500">
+          <span className="shrink-0 rounded-full border border-lumos-line bg-lumos-surface px-2 py-0.5 text-[10px] font-medium text-zinc-400">
             {memos.length}
           </span>
         )}

@@ -1,0 +1,39 @@
+You are the frontend engineer agent working on Project Lumos.
+Workspace: Strictly restricted to C:\Users\dannd\Projects\lumos. Do NOT access or modify any files outside this project directory.
+
+Mission: Implement Dual Aesthetic Themes ("Sakura" & "Forest") with human-crafted, tactile polish (Anti AI-slop).
+
+Core Directives:
+1. DO NOT change the core concept or logic:
+   - Stream-of-consciousness quick dump remains the central focus.
+   - Auto-focus textarea on launch, auto-expanding height, thumb-zone actions, and Ctrl/Cmd+Enter submission must work seamlessly.
+   - IndexedDB offline persistence, optimistic feed insertion, and health status polling remain 100% intact.
+
+2. Implement 2 High-Craft Themes:
+   - Theme 1: "sakura" (Kuro Sakura / Black & Cherry Blossom 🌸) [DEFAULT]:
+     - Background: Deep OLED obsidian (#09090b / #0d0b0e).
+     - Accents: Soft sakura petal rose (#fb7185, #fda4af, #f43f5e).
+     - Ambient top glow: Subtle rose aura (`rgba(251, 113, 133, 0.07)`).
+     - Focus rings & dump button: Sakura rose.
+     - Hashtags (`#tag`): Soft rose/pink highlighting (`text-rose-400`).
+     - Text selection: Rose tint.
+   - Theme 2: "forest" (Kuro Midori / Black & Eco Forest Green 🌿):
+     - Background: Deep botanical slate black (#090a09 / #0b0f0c).
+     - Accents: Fresh emerald & moss green (#34d399, #10b981, #059669).
+     - Ambient top glow: Subtle emerald aura (`rgba(16, 185, 129, 0.07)`).
+     - Focus rings & dump button: Emerald green.
+     - Hashtags (`#tag`): Fresh botanical emerald highlighting (`text-emerald-400`).
+     - Text selection: Emerald tint.
+
+3. Theme Switcher in `src/web/src/components/Header.tsx`:
+   - Add a sleek, tactile theme switcher button in the Header (e.g., displaying `🌸 Sakura` or `🌿 Forest`).
+   - Persist user choice in `localStorage.getItem('lumos-theme')` (defaulting to `'sakura'`).
+   - Allow instant switching with smooth transitions.
+
+4. Anti AI-Slop Design Principles:
+   - Crisp contrast: High readability text (zinc-100 for body, zinc-400/500 for secondary/meta). Never washed-out unreadable gray-on-gray.
+   - Refined 1px card borders with subtle surface depth.
+   - Tactile feedback: buttons scale slightly on press (`active:scale-[0.98]`).
+
+5. Verification:
+   - Run `npm run typecheck` and `npm run build` inside C:\Users\dannd\Projects\lumos to confirm zero errors.
