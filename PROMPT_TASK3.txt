@@ -1,0 +1,44 @@
+You are the builder agent working on Project Lumos.
+Workspace: Strictly restricted to C:\Users\dannd\Projects\lumos. Do NOT access or modify any files outside this project directory.
+
+Context:
+Carefully read the design and architecture specifications located in docs/:
+- docs/TECH_SPEC.md
+- docs/TECH_STACK.md
+- docs/UI_UX_DESIGN.md
+- docs/NETWORKING.md
+- docs/AI_REFINEMENT.md
+- docs/TODO.md
+
+Your Mission for Task 3: Monorepo Foundation & Frontend Scaffolding.
+
+1. Root Configuration:
+   - package.json: Monorepo scripts (`npm run dev:web`, `npm run dev:server`, `npm run build`, etc.)
+   - tsconfig.json: Root TypeScript configuration
+   - .gitignore: Exclude node_modules, dist, build, .env, *.log
+
+2. Shared Data Models (`src/shared/types.ts`):
+   - Export shared interfaces:
+     - `MemoItem` (id: string, content: string, createdAt: number, status: 'pending' | 'syncing' | 'synced' | 'failed', tags?: string[])
+     - `DumpPayload` (memos: MemoItem[])
+     - `RefinedKanbanCard` (title: string, summary: string, keyPoints: string[], tags: string[], rawDump: string)
+     - `HealthStatus` (status: string, timestamp: number, version: string)
+
+3. Frontend Scaffolding (`src/web`):
+   - React + Vite + TypeScript + Tailwind CSS structure
+   - package.json with dependencies: react, react-dom, lucide-react, clsx, tailwind-merge, idb-keyval
+   - vite.config.ts, index.html, tailwind.config.js, postcss.config.js
+   - UI Components adhering to docs/UI_UX_DESIGN.md:
+     - `src/web/src/components/Header.tsx`: Brand '⚡ LUMOS' and connection status badge
+     - `src/web/src/components/Composer.tsx`: Auto-expanding textarea, auto-focus, bottom action bar in thumb zone, Dump button
+     - `src/web/src/components/MemoCard.tsx`: Display memo text, timestamp, status badge ('Offline' / 'Synced')
+     - `src/web/src/components/MemoStream.tsx`: Reverse-chronological timeline of cards
+     - `src/web/src/lib/storage.ts`: IndexedDB queue helper for offline-first persistence
+     - `src/web/src/App.tsx`: Integrating Composer, Storage, and MemoStream with instant optimistic UI update
+
+4. Server Foundation (`src/server`):
+   - package.json with express, cors, dotenv, tsx, typescript, and type definitions
+   - tsconfig.json
+   - `src/server/src/index.ts`: Express app listening on port 3030, with CORS, JSON body parser, GET /api/health endpoint, and stub POST /api/memos/dump
+
+Make sure all files are valid, cleanly formatted TypeScript/React code without placeholders.

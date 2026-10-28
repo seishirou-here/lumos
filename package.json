@@ -1,0 +1,29 @@
+{
+  "name": "lumos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Project Lumos - mobile quick-dump and AI-refined ingestion to Hermes Kanban.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "src/web",
+    "src/server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,server -c cyan,magenta \"npm run dev:web\" \"npm run dev:server\"",
+    "dev:web": "npm run dev -w @lumos/web",
+    "dev:server": "npm run dev -w @lumos/server",
+    "build": "npm run build:web && npm run build:server",
+    "build:web": "npm run build -w @lumos/web",
+    "build:server": "npm run build -w @lumos/server",
+    "start": "npm run start -w @lumos/server",
+    "preview": "npm run preview -w @lumos/web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.7.2"
+  }
+}
