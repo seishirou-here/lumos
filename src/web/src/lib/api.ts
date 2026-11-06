@@ -1,4 +1,10 @@
-import type { DumpPayload, DumpResult, HealthStatus, MemoItem } from '@shared/types';
+import type {
+  DumpPayload,
+  DumpResult,
+  GetMemosResponse,
+  HealthStatus,
+  MemoItem,
+} from '@shared/types';
 
 /**
  * Empty by default: Vite proxies `/api` to the host bridge in development and
@@ -66,4 +72,57 @@ export async function dumpMemos(memos: MemoItem[]): Promise<string[]> {
   }
 
   return result.accepted.filter((id): id is string => typeof id === 'string');
+}
+
+/** Minimal structural guard for memos arriving from the host archive. */
+function isServerMemo(value: unknown): value is MemoItem {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const memo = value as Partial<MemoItem>;
+  return (
+    typeof memo.id === 'string' &&
+    memo.id.length > 0 &&
+    typeof memo.content === 'string' &&
+    typeof memo.createdAt === 'number' &&
+    Number.isFinite(memo.createdAt)
+  );
+}
+
+/**
+ * Fetch archived memos from the host, newest first. Throws on network or
+ * protocol failures so callers can keep their local feed untouched.
+ */
+export async function fetchMemos(
+  options: { since?: number; limit?: number } = {},
+): Promise<MemoItem[]> {
+  const params = new URLSearchParams();
+  if (typeof options.since === 'number' && Number.isFinite(options.since)) {
+    params.set('since', String(Math.max(0, Math.floor(options.since))));
+  }
+  if (typeof options.limit === 'number' && Number.isFinite(options.limit) && options.limit > 0) {
+    params.set('limit', String(Math.floor(options.limit)));
+  }
+
+  const query = params.toString();
+  const response = await fetch(apiUrl(`/api/memos${query ? `?${query}` : ''}`), {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(
+      `Host rejected memo history request (${response.status})${detail ? `: ${detail}` : '.'}`,
+    );
+  }
+
+  const payload = (await response.json()) as Partial<GetMemosResponse>;
+  if (!Array.isArray(payload.memos)) {
+    throw new Error('Host returned an invalid memo history payload.');
+  }
+
+  return payload.memos
+    .filter(isServerMemo)
+    .map((memo) => ({ ...memo, status: 'synced' as const }));
 }

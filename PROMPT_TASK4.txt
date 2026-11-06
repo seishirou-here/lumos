@@ -1,0 +1,66 @@
+You are the backend & full-stack engineer agent working on Project Lumos.
+Workspace: Strictly restricted to C:\Users\dannd\Projects\lumos. Do NOT access or modify any files outside this project directory.
+
+Context:
+Read the project documentation:
+- docs/TECH_SPEC.md
+- docs/TECH_STACK.md
+- docs/NETWORKING.md
+- docs/TODO.md
+
+Your Mission for Task 4: Server SQLite Archive & Cross-Device Bi-directional Feed Sync.
+
+1. Server SQLite Database (`src/server`):
+   - Engine: Use Node.js v24 built-in `node:sqlite` (`import { DatabaseSync } from 'node:sqlite'`). Do NOT install external SQLite packages like better-sqlite3 or sqlite3.
+   - Database storage: `src/server/data/lumos.db`. Create `src/server/data/` directory automatically if it does not exist. Ensure `.gitignore` ignores `src/server/data/`, `*.db`, `*.db-journal`, `*.db-wal`.
+   - Table schema:
+     ```sql
+     CREATE TABLE IF NOT EXISTS memos (
+       id TEXT PRIMARY KEY,
+       content TEXT NOT NULL,
+       created_at INTEGER NOT NULL,
+       tags TEXT,
+       status TEXT NOT NULL DEFAULT 'synced',
+       kanban_task_id TEXT,
+       server_created_at INTEGER NOT NULL
+     );
+     CREATE INDEX IF NOT EXISTS idx_memos_created_at ON memos (created_at DESC);
+     ```
+   - Database module (`src/server/src/db.ts`):
+     - Initialize db safely with WAL mode enabled (`PRAGMA journal_mode = WAL;`).
+     - `upsertMemos(memos: MemoItem[])`: Insert or ignore/replace memos atomically using a transaction. Convert `tags` array to JSON string when writing. Set `server_created_at` to Date.now().
+     - `getMemos(options?: { since?: number; limit?: number })`: Query memos sorted by `created_at DESC`. Support `since` filter and `limit` (default 50, max 200). Parse `tags` JSON string back to string[] or undefined. Return `MemoItem[]` with `status: 'synced'`.
+     - `getMemoCount()`: Return total count of stored memos.
+
+2. Server API Endpoints (`src/server/src/index.ts`):
+   - Update `POST /api/memos/dump`:
+     - Validate incoming payload.
+     - Save/upsert accepted memos into SQLite via `upsertMemos`.
+     - Respond with 202 `{ received: count, accepted: string[] }`.
+   - Implement `GET /api/memos`:
+     - Accept query params: `since` (number) and `limit` (number).
+     - Fetch memos from SQLite via `getMemos`.
+     - Respond with 200 `{ memos: MemoItem[], total: number }`.
+   - Update `GET /api/health`:
+     - Include db status and memo count in health check payload.
+
+3. Shared Contracts (`src/shared/types.ts`):
+   - Ensure `MemoItem` and any new response interfaces (`GetMemosResponse`, etc.) are cleanly typed and exported.
+
+4. Frontend Bi-directional Sync (`src/web`):
+   - API client (`src/web/src/lib/api.ts`):
+     - Implement `fetchMemos(options?: { since?: number; limit?: number }): Promise<MemoItem[]>`.
+   - IndexedDB Storage (`src/web/src/lib/storage.ts`):
+     - Implement `mergeServerMemos(serverMemos: MemoItem[]): Promise<MemoItem[]>`.
+     - CRITICAL RULE: If a local memo in IndexedDB has status `'pending'` or `'syncing'`, it must NEVER be overwritten or replaced by a server memo. Only insert missing memos or update already `'synced'` memos.
+     - Return the combined, updated list sorted newest first (`createdAt DESC`).
+   - App Sync Cycle (`src/web/src/App.tsx`):
+     - When syncing (`flushQueue` or when server becomes `online`):
+       - 1. Push local pending memos to `dumpMemos()`.
+       - 2. On success or when host is online, call `fetchMemos()`, merge into IndexedDB using `mergeServerMemos()`, and update React `memos` state.
+     - Ensure stream-of-consciousness quick composer, auto-focus, tactile theme polish (Sakura & Forest), and offline resilience are 100% preserved. No UI regressions.
+
+5. Verification Gate:
+   - Run `npm run typecheck` across all workspaces and verify 0 errors.
+   - Run `npm run build` to confirm both web and server build cleanly.
+   - Update `docs/TODO.md` checking off Task 4 items upon verified completion.

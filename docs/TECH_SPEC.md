@@ -69,10 +69,24 @@ Project Lumos is designed to capture thoughts, ideas, and tasks the instant they
 - **Sync Trigger:** Periodically checks host heartbeat; flushes pending queue upon detecting online connectivity.
 
 ### B. Ingestion & Bridge Server (Host Laptop)
-- **Primary Role:** Local gateway receiver on the laptop.
+- **Primary Role:** Local gateway receiver and durable archive on the laptop.
+- **Server Storage:** Lightweight SQLite database (`src/server/data/lumos.db`) using Node v24 built-in `node:sqlite` (`PRAGMA journal_mode = WAL`).
+- **Table Schema (`memos`):**
+  - `id` (TEXT PRIMARY KEY)
+  - `content` (TEXT NOT NULL)
+  - `created_at` (INTEGER NOT NULL)
+  - `tags` (TEXT)
+  - `status` (TEXT NOT NULL DEFAULT 'synced')
+  - `kanban_task_id` (TEXT)
+  - `server_created_at` (INTEGER NOT NULL)
 - **Endpoints:**
-  - `GET /api/health`: Heartbeat probe for client connectivity.
-  - `POST /api/memos/dump`: Accepts batches of raw memos from client queue.
+  - `GET /api/health`: Heartbeat probe reporting server, database status, and memo count.
+  - `POST /api/memos/dump`: Accepts batches of raw memos, archives them idempotently into SQLite, and responds immediately.
+  - `GET /api/memos`: Returns recent memo history for bi-directional cross-device feed synchronization.
+- **Bi-Directional Sync Rules:**
+  1. *Pending is King:* Local client memos with status `pending` or `syncing` are never overwritten by server memos.
+  2. *Push-then-Pull:* Clients push local pending queues first, then pull server history to merge into local feeds.
+  3. *Optimistic Stream:* Newly captured memos appear in the UI stream instantly.
 - **Execution:** Bridges refined payloads into Hermes Kanban CLI (`hermes kanban create ...`).
 
 ### C. Lumi Refinement Engine

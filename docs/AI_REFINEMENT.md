@@ -24,12 +24,12 @@ The **Lumi Refinement Engine** acts as the intelligent bridge between Papa's raw
 Rather than managing disparate external APIs or local model runtimes, Lumos connects directly to Papa's active local **9router** instance:
 
 * **Endpoint:** `http://127.0.0.1:20128/v1/chat/completions` (OpenAI-compatible)
-* **Default Model:** `fast_daily` or `gemini/gemini-3.8-flash` (Sub-second latency, excellent Indonesian & slang understanding, very low token overhead).
+* **Default Model:** `reasoning-lumos` (Dedicated reasoning combo configured via Papa's 9router, deep Indonesian & tech slang understanding, structured reasoning).
 * **Configurable via `.env`:**
   ```env
   ROUTER_BASE_URL="http://127.0.0.1:20128/v1"
   ROUTER_API_KEY="dummy" # 9router runs locally without auth requirement
-  REFINEMENT_MODEL="fast_daily"
+  REFINEMENT_MODEL="reasoning-lumos"
   REFINEMENT_TEMPERATURE=0.3
   ```
 
@@ -119,3 +119,17 @@ hermes kanban create "{title}" \
           - Tag: "lumos,unrefined"
           - Result: Idea saved safely into Kanban triage!
 ```
+
+---
+
+## 6. Execution Lifecycle: Asynchronous Background Queue (Option A)
+
+To preserve sub-millisecond mobile response times and zero friction:
+1. **Immediate Ingestion Acknowledgment:** When mobile client pushes memos to `POST /api/memos/dump`, the server immediately archives them into `lumos.db` (SQLite) and responds with `202 Accepted`. Mobile client updates local IndexedDB to `synced` right away.
+2. **Background Processing Worker:** The server enqueues unrefined memos into a lightweight background queue.
+3. **Sequential Refinement & Injection:** For each queued memo:
+   - Queries `reasoning-lumos` on 9router.
+   - Generates structured Markdown description.
+   - Executes `hermes kanban create`.
+   - Updates `kanban_task_id` in `lumos.db`.
+4. **Resilience:** If the host laptop is sleeping or 9router is slow, mobile users feel zero lag. Memos will be refined in order upon host availability.

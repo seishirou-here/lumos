@@ -27,6 +27,12 @@ coverage/
 # Vite cache
 .vite/
 
+# Local SQLite archive (runtime data, never committed)
+src/server/data/
+*.db
+*.db-journal
+*.db-wal
+
 # Editors & operating systems
 .vscode/*
 !.vscode/extensions.json

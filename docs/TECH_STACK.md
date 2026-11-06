@@ -43,6 +43,7 @@ Designed as a lightweight, dependable local daemon running on Papa's laptop:
 | **Framework** | **Express.js (TypeScript)** | Minimal, battle-tested REST API framework with zero magic and predictable lifecycle. |
 | **Dev Runner** | **`tsx`** | Blazing-fast TypeScript execution without compilation overhead during development. |
 | **Validation** | **Zod** | Runtime payload validation for incoming mobile memos. |
+| **Local Archive DB** | **`node:sqlite` (Node v24 Built-in)** | Zero external dependencies, native C-speed SQLite with WAL mode, persistent cross-device feed synchronization. |
 | **Hermes Bridge** | **`node:child_process` (execFile)** | Calls `hermes kanban create` through the official CLI interface, insulating Lumos from internal database migrations. |
 | **AI Client** | **Native `fetch` / OpenAI SDK** | Lightweight HTTP client to call the local/configured LLM endpoint for text refinement. |
 | **Security** | **CORS + Dotenv** | Restricted origins (Tailscale mesh & localhost) and bearer token authentication. |

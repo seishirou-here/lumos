@@ -139,7 +139,7 @@ export function Composer({ onSubmit }: ComposerProps) {
             type="button"
             onClick={() => void submit()}
             disabled={!canSubmit}
-            className="group flex items-center gap-2 rounded-xl bg-lumos-accent px-4 py-2 text-[13px] font-semibold text-lumos-accent-ink shadow-lg shadow-lumos-accent/25 transition-all duration-200 ease-glide hover:bg-lumos-accent-soft active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-lumos-elevated disabled:text-zinc-500 disabled:shadow-none"
+            className="group flex items-center gap-2 rounded-xl bg-lumos-accent px-4 py-2 text-[13px] font-semibold text-lumos-accent-ink shadow-lg shadow-lumos-accent/25 transition-all duration-200 ease-glide hover:bg-lumos-accent-soft active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-lumos-elevated disabled:text-zinc-400 disabled:shadow-none"
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

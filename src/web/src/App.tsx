@@ -5,12 +5,34 @@ import type { MemoItem, MemoSyncStatus } from '@shared/types';
 import { Composer } from './components/Composer';
 import { Header, type ConnectionStatus } from './components/Header';
 import { MemoStream } from './components/MemoStream';
-import { checkHealth, dumpMemos } from './lib/api';
-import { getPendingMemos, listMemos, saveMemo, updateMemo } from './lib/storage';
+import { checkHealth, dumpMemos, fetchMemos } from './lib/api';
+import {
+  getPendingMemos,
+  listMemos,
+  mergeServerMemos,
+  saveMemo,
+  updateMemo,
+} from './lib/storage';
 import { createMemoId, extractTags } from './lib/utils';
 
 const HEALTH_POLL_INTERVAL = 20_000;
 const HEALTH_TIMEOUT = 5_000;
+
+/**
+ * Keep optimistic local writes visible when the archive response lands while a
+ * memo is still being saved: only already-synced entries may be replaced.
+ */
+function reconcileMemos(previous: MemoItem[], merged: MemoItem[]): MemoItem[] {
+  const byId = new Map(previous.map((memo) => [memo.id, memo]));
+
+  for (const memo of merged) {
+    const local = byId.get(memo.id);
+    if (local && local.status !== 'synced') continue;
+    byId.set(memo.id, memo);
+  }
+
+  return [...byId.values()].sort((a, b) => b.createdAt - a.createdAt);
+}
 
 export default function App() {
   const [memos, setMemos] = useState<MemoItem[]>([]);
@@ -52,27 +74,50 @@ export default function App() {
     if (isHydrating || syncingRef.current || !navigator.onLine) return;
 
     syncingRef.current = true;
-    let inFlightIds: string[] = [];
+    let pendingIds: string[] = [];
+    let pushError: unknown;
 
     try {
       const pending = await getPendingMemos();
-      if (pending.length === 0) return;
 
-      inFlightIds = pending.map((memo) => memo.id);
-      await applyStatus(inFlightIds, 'syncing');
+      // 1. Push local unpublished memos to the host archive.
+      if (pending.length > 0) {
+        pendingIds = pending.map((memo) => memo.id);
+        await applyStatus(pendingIds, 'syncing');
 
-      const accepted = await dumpMemos(pending);
-      const acceptedIds = new Set(accepted);
-      const syncedIds = inFlightIds.filter((id) => acceptedIds.has(id));
-      const rejectedIds = inFlightIds.filter((id) => !acceptedIds.has(id));
+        try {
+          const accepted = await dumpMemos(pending);
+          const acceptedIds = new Set(accepted);
+          const syncedIds = pendingIds.filter((id) => acceptedIds.has(id));
+          const rejectedIds = pendingIds.filter((id) => !acceptedIds.has(id));
 
-      if (syncedIds.length > 0) await applyStatus(syncedIds, 'synced');
-      if (rejectedIds.length > 0) await applyStatus(rejectedIds, 'failed');
+          if (syncedIds.length > 0) await applyStatus(syncedIds, 'synced');
+          if (rejectedIds.length > 0) await applyStatus(rejectedIds, 'failed');
+          pendingIds = [];
+        } catch (error) {
+          pushError = error;
+          await applyStatus(pendingIds, 'pending');
+          pendingIds = [];
+        }
+      }
 
-      setConnection('online');
+      // 2. Pull the host archive and merge it into IndexedDB + React state.
+      try {
+        const serverMemos = await fetchMemos({ limit: 200 });
+        const merged = await mergeServerMemos(serverMemos);
+        setMemos((previous) => reconcileMemos(previous, merged));
+        setConnection('online');
+      } catch (error) {
+        console.error('Lumos: failed to fetch host memo history.', error);
+        if (pushError) setConnection('offline');
+      }
+
+      if (pushError) {
+        console.error('Lumos: memo dump failed, items stay queued locally.', pushError);
+      }
     } catch (error) {
-      console.error('Lumos: memo sync failed, items stay queued locally.', error);
-      if (inFlightIds.length > 0) await applyStatus(inFlightIds, 'pending');
+      console.error('Lumos: sync cycle failed, items stay queued locally.', error);
+      if (pendingIds.length > 0) await applyStatus(pendingIds, 'pending');
       setConnection('offline');
     } finally {
       syncingRef.current = false;

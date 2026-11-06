@@ -13,6 +13,19 @@ Tracked decomposed subtasks for OpenCode & Papa:
 - [x] **Task 3: Scaffold Frontend Workspace**
   - Location: `src/web`
   - Setup base memo stream feed, composer, and offline IndexedDB queue.
-- [ ] **Task 4: Hermes Kanban Bridge & Ingestion Server**
+- [x] **Task 4: Server SQLite Archive & Cross-Device Feed Sync**
+  - Location: `src/server`, `src/web`
+  - [x] Setup lightweight SQLite database (`lumos.db`) in `src/server` for persistent memo archiving.
+  - [x] Add `GET /api/memos` endpoint in `src/server` to query memo history with pagination.
+  - [x] Update `src/web` to merge server history into local IndexedDB feed (bi-directional sync between mobile & laptop).
+- [x] **Task 5: Hermes Kanban Bridge & AI Refinement Ingestion**
   - Location: `src/server`
-  - Connect mobile quick-dump endpoint to inject raw ideas into Kanban triage.
+  - [x] Connect dump flow to Lumi Refinement Engine via 9router (`reasoning-lumos`).
+  - [x] Inject refined structured cards into Hermes Kanban `triage` lane (`hermes kanban create`).
+  - [x] Resilient offline fallback (`#unrefined` card) if 9router is unreachable.
+- [ ] **Task 6: Live End-to-End Testing & Mobile Tailscale Validation**
+  - [ ] Connect live 9router auth key (`ROUTER_API_KEY`) for full AI refinement pipeline.
+  - [ ] Test mobile capture over Tailscale mesh and verify cards landing in Kanban `triage`.
+- [ ] **Task 7: Aesthetic Polish & Mobile PWA Touch Ergonomics Pass**
+  - [ ] Fine-tune Kuro Sakura & Kuro Midori themes, tactile micro-interactions (`active:scale-[0.98]`).
+  - [ ] Optimize mobile virtual keyboard handling & quick-dump ergonomics.

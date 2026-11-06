@@ -1,0 +1,87 @@
+You are the backend engineer agent working on Project Lumos.
+Workspace: Strictly restricted to C:\Users\dannd\Projects\lumos. Do NOT access or modify any files outside this project directory.
+
+Context:
+Read the project documentation:
+- docs/AI_REFINEMENT.md
+- docs/TECH_SPEC.md
+- docs/TECH_STACK.md
+- docs/TODO.md
+
+Your Mission for Task 5: Hermes Kanban Bridge & Lumi AI Refinement Engine Ingestion.
+
+1. AI Refinement Engine (`src/server/src/refinement.ts`):
+   - Model Provider: Local 9router OpenAI-compatible API (`http://127.0.0.1:20128/v1/chat/completions`).
+   - Default Model: `process.env.REFINEMENT_MODEL ?? 'reasoning-lumos'`.
+   - Base URL: `process.env.ROUTER_BASE_URL ?? 'http://127.0.0.1:20128/v1'`.
+   - Timeout: 30 seconds (configurable via `REFINEMENT_TIMEOUT_MS`).
+   - Prompt & Schema: Follow `docs/AI_REFINEMENT.md` section 3 exactly.
+     - System prompt instructs JSON output: `{ title, summary, key_points, tags }`.
+     - Robust parsing: Strip any markdown codeblock fences (```json ... ```) and handle reasoning model thinking tags if present.
+   - Resilient Fallback:
+     - If 9router times out, returns HTTP error, or outputs unparseable JSON:
+       - Fallback title: Truncate first 40 chars of raw content (clean, single-line).
+       - Fallback summary: Raw content verbatim.
+       - Fallback key_points: [].
+       - Fallback tags: ['unrefined'].
+     - The process must NEVER throw an unhandled exception or lose a memo.
+
+2. Hermes Kanban Bridge (`src/server/src/kanban.ts`):
+   - Format Markdown description from refined data:
+     ```markdown
+     ### 💡 Inti Ide
+     {summary}
+
+     ### 🎯 Poin-Poin Utama
+     {key_points.map(pt => `- ${pt}`).join('\n')}
+
+     ---
+     > 📝 **Original Raw Dump (dari HP/Laptop):**
+     > "{rawContent}"
+
+     *Tags: #lumos {tags.map(t => `#${t}`).join(' ')}*
+     ```
+   - Execution via `node:child_process` (`execFile`):
+     - CRITICAL WINDOWS EXECUTION NOTE:
+       Call `hermes.exe` directly WITHOUT `{ shell: true }`!
+       Example:
+       ```ts
+       import { execFile } from 'node:child_process';
+       import { promisify } from 'node:util';
+       const execFileAsync = promisify(execFile);
+       const hermesBin = process.env.HERMES_BIN || 'hermes.exe';
+
+       const args = ['kanban', 'create', title, '--body', body, '--triage', '--idempotency-key', memoId, '--json'];
+       const { stdout } = await execFileAsync(hermesBin, args, { windowsHide: true });
+       const parsed = JSON.parse(stdout);
+       return parsed.id as string;
+       ```
+       Do NOT pass `{ shell: true }` because Windows cmd.exe unquotes strings with spaces.
+       `hermes.exe` is already available on Windows PATH.
+     - Parse JSON output and return created task id (`id`, e.g. `t_...`).
+     - Error handling: Log if CLI fails and allow retry on next pass.
+
+3. Database Helpers (`src/server/src/db.ts`):
+   - Add `getUnprocessedMemos(limit?: number): MemoItem[]` (queries memos where `kanban_task_id IS NULL` ordered by `created_at ASC`).
+   - Add `setMemoKanbanTaskId(id: string, kanbanTaskId: string): void` (updates `kanban_task_id` for given memo id).
+
+4. Background Processing Queue (`src/server/src/queue.ts`):
+   - Implement an asynchronous worker (Option A - Asynchronous Background Queue):
+     - Does NOT block `POST /api/memos/dump` response (client receives immediate 202).
+     - Processes unprocessed memos sequentially (concurrency 1) to prevent overwhelming 9router.
+     - For each memo:
+       1. Refine text via `refineMemo(memo.content)`.
+       2. Inject into Hermes Kanban via `createKanbanCard(memo, refined)`.
+       3. Update `kanban_task_id` in SQLite via `setMemoKanbanTaskId(memo.id, taskId)`.
+     - Queue runs on server startup (recovers any backlog) and is kicked whenever new memos are dumped.
+
+5. Server Integration (`src/server/src/index.ts` & `.env.example`):
+   - Trigger the background queue when memos are accepted in `POST /api/memos/dump`.
+   - Start queue processing on server listen.
+   - Update `.env.example` with `ROUTER_BASE_URL` and `REFINEMENT_MODEL=reasoning-lumos`.
+
+6. Verification Gate:
+   - Run `npm run typecheck` across all workspaces (0 errors).
+   - Run `npm run build` (clean compilation).
+   - Test by running server, sending a sample memo, and verifying that the memo is refined and a card appears in Hermes Kanban triage (`hermes kanban list`).
+   - Update `docs/TODO.md` checking off Task 5 upon successful completion.
