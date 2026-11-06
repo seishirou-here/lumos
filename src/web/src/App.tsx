@@ -38,6 +38,7 @@ export default function App() {
   const [memos, setMemos] = useState<MemoItem[]>([]);
   const [connection, setConnection] = useState<ConnectionStatus>('checking');
   const [isHydrating, setIsHydrating] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const syncingRef = useRef(false);
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function App() {
 
       // 1. Push local unpublished memos to the host archive.
       if (pending.length > 0) {
+        setIsSyncing(true);
         pendingIds = pending.map((memo) => memo.id);
         await applyStatus(pendingIds, 'syncing');
 
@@ -121,6 +123,7 @@ export default function App() {
       setConnection('offline');
     } finally {
       syncingRef.current = false;
+      setIsSyncing(false);
     }
   }, [applyStatus, isHydrating]);
 
@@ -207,14 +210,14 @@ export default function App() {
       <div aria-hidden="true" className="grain pointer-events-none fixed inset-0" />
 
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 sm:px-6">
-        <Header status={connection} pendingCount={pendingCount} />
+        <Header status={connection} pendingCount={pendingCount} isSyncing={isSyncing} />
 
         <main className="flex-1">
           <Composer onSubmit={handleDump} />
           <MemoStream memos={memos} isLoading={isHydrating} />
         </main>
 
-        <footer className="pb-safe pt-2 text-center text-[10px] tracking-wide text-zinc-500">
+        <footer className="pb-dock pt-2 text-center text-[10px] tracking-wide text-zinc-500">
           Offline-first · disinkronkan ke laptop lewat Tailscale
         </footer>
       </div>

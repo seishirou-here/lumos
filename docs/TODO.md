@@ -23,9 +23,9 @@ Tracked decomposed subtasks for OpenCode & Papa:
   - [x] Connect dump flow to Lumi Refinement Engine via 9router (`reasoning-lumos`).
   - [x] Inject refined structured cards into Hermes Kanban `triage` lane (`hermes kanban create`).
   - [x] Resilient offline fallback (`#unrefined` card) if 9router is unreachable.
-- [ ] **Task 6: Live End-to-End Testing & Mobile Tailscale Validation**
-  - [ ] Connect live 9router auth key (`ROUTER_API_KEY`) for full AI refinement pipeline.
-  - [ ] Test mobile capture over Tailscale mesh and verify cards landing in Kanban `triage`.
-- [ ] **Task 7: Aesthetic Polish & Mobile PWA Touch Ergonomics Pass**
-  - [ ] Fine-tune Kuro Sakura & Kuro Midori themes, tactile micro-interactions (`active:scale-[0.98]`).
-  - [ ] Optimize mobile virtual keyboard handling & quick-dump ergonomics.
+- [x] **Task 6: Live End-to-End Testing & Mobile Tailscale Validation**
+  - [x] Connect live 9router auth key (`ROUTER_API_KEY`) for full AI refinement pipeline.
+  - [x] Test mobile capture over Tailscale mesh and verify cards landing in Kanban `triage`.
+- [x] **Task 7: Aesthetic Polish & Mobile PWA Touch Ergonomics Pass**
+  - [x] Fine-tune Kuro Sakura & Kuro Midori themes, tactile micro-interactions (`active:scale-[0.98]`).
+  - [x] Optimize mobile virtual keyboard handling & quick-dump ergonomics.

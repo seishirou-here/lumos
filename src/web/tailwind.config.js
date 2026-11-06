@@ -43,7 +43,8 @@ export default {
         },
       },
       animation: {
-        'rise-in': 'rise-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        // `backwards` (not `both`): a persisted end-state transform would override active:scale.
+        'rise-in': 'rise-in 320ms cubic-bezier(0.22, 1, 0.36, 1) backwards',
         'soft-pulse': 'soft-pulse 2s ease-in-out infinite',
         'theme-pop': 'theme-pop 220ms cubic-bezier(0.22, 1, 0.36, 1) both',
       },

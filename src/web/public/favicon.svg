@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lumos">
   <rect width="64" height="64" rx="16" fill="#09090b" />
-  <path
-    d="M36 6 18 36h11l-3 22 20-32H34l2-20Z"
-    fill="#fbbf24"
-    stroke="#fcd34d"
-    stroke-linejoin="round"
-    stroke-width="2"
-  />
+  <g fill="none" stroke="#fb7185" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+    <path d="M28 13a4 4 0 0 1 8 0" />
+    <rect x="25" y="13" width="14" height="3" rx="1" />
+    <rect x="22" y="16" width="20" height="30" rx="7" />
+    <rect x="26" y="46" width="12" height="3" rx="1" />
+  </g>
+  <path d="M32 23.5C32.6 28.6 33.6 30.4 37 31C33.6 31.6 32.6 33.4 32 38.5C31.4 33.4 30.4 31.6 27 31C30.4 30.4 31.4 28.6 32 23.5Z" fill="#ffe4e6" />
 </svg>

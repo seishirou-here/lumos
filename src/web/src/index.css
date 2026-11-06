@@ -18,6 +18,8 @@
     --lumos-accent-strong: 244 63 94; /* #f43f5e · rose-500 */
     --lumos-accent-ink: 32 9 15; /* #20090f */
     --lumos-glow: 251 113 133;
+    --lumos-hashtag: 251 113 133; /* rose-400 */
+    --lumos-hashtag-bg: 251 113 133; /* used at low alpha */
   }
 
   [data-theme='forest'] {
@@ -33,12 +35,25 @@
     --lumos-accent-strong: 16 185 129; /* #10b981 · emerald-500 */
     --lumos-accent-ink: 3 22 15; /* #03160f */
     --lumos-glow: 16 185 129;
+    --lumos-hashtag: 52 211 153; /* emerald-400 */
+    --lumos-hashtag-bg: 16 185 129;
+  }
+
+  :root {
+    /* Fallbacks until the Composer / viewport hooks measure the real values. */
+    --composer-height: 8.5rem;
+    --keyboard-inset: 0px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   html {
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     background-color: rgb(var(--lumos-bg));
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -46,9 +61,18 @@
     background-color: rgb(var(--lumos-bg));
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
     transition:
       background-color 380ms ease,
       color 380ms ease;
+  }
+
+  /* No double-tap zoom delay on controls; no long-press callouts on chrome. */
+  button,
+  [role='button'],
+  a {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
   }
 
   ::selection {
@@ -75,19 +99,84 @@
 
   .brand-mark {
     color: rgb(var(--lumos-accent));
-    filter: drop-shadow(0 0 12px rgb(var(--lumos-accent) / 0.45));
+    filter: drop-shadow(0 0 10px rgb(var(--lumos-accent) / 0.5));
   }
 
+  /* Crisp inline #tags: full-strength accent text on a barely-there chip. */
   .memo-hashtag {
-    @apply font-medium;
+    @apply rounded-[4px] font-medium;
+    color: rgb(var(--lumos-hashtag));
+    background-color: rgb(var(--lumos-hashtag-bg) / 0.08);
+    box-shadow: 0 0 0 1px rgb(var(--lumos-hashtag-bg) / 0.12);
+    padding: 0 0.2em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 
-  [data-theme='sakura'] .memo-hashtag {
-    @apply text-rose-400;
+  /*
+   * Mobile docked composer. Android (interactive-widget=resizes-content) lifts
+   * it above the keyboard natively; iOS overlays the keyboard, so the measured
+   * overlap is applied as a compositor-only transform to avoid layout jank.
+   */
+  .composer-dock {
+    padding-bottom: max(0.75rem, var(--safe-bottom));
+    transform: translate3d(0, calc(var(--keyboard-inset) * -1), 0);
+    will-change: transform;
   }
 
-  [data-theme='forest'] .memo-hashtag {
-    @apply text-emerald-400;
+  .composer-dock[data-keyboard='open'] {
+    /* The keyboard covers the home indicator; reclaim that space. */
+    padding-bottom: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .composer-dock,
+    .composer-dock[data-keyboard='open'] {
+      padding-bottom: 0;
+      transform: none;
+      will-change: auto;
+    }
+  }
+
+  /* Breathing halo behind status dots (connected / syncing). */
+  .status-breathe {
+    position: relative;
+  }
+
+  .status-breathe::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background-color: currentColor;
+    animation: breathe 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .status-breathe[data-tempo='fast']::after {
+    animation-duration: 1.2s;
+  }
+
+  /* Desktop-only hover tooltip; touch devices rely on aria-label / title. */
+  .lumos-tooltip {
+    @apply pointer-events-none absolute right-0 top-full z-40 mt-2 whitespace-nowrap rounded-lg border border-lumos-line bg-lumos-elevated px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 shadow-panel-raised;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition:
+      opacity 150ms ease,
+      transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .group:hover > .lumos-tooltip {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 350ms;
+    }
+  }
+
+  .group:has(:focus-visible) > .lumos-tooltip {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   /* Barely-there film grain: keeps the OLED black from feeling synthetic. */
@@ -101,7 +190,22 @@
 
 @layer utilities {
   .pb-safe {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-bottom: max(1rem, var(--safe-bottom));
+  }
+
+  .pt-safe {
+    padding-top: var(--safe-top);
+  }
+
+  /* Reserve room under the stream for the docked mobile composer. */
+  .pb-dock {
+    padding-bottom: calc(var(--composer-height) + 0.5rem);
+  }
+
+  @media (min-width: 640px) {
+    .pb-dock {
+      padding-bottom: max(1rem, var(--safe-bottom));
+    }
   }
 
   .scrollbar-none {
@@ -110,6 +214,18 @@
 
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@keyframes breathe {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
   }
 }
 

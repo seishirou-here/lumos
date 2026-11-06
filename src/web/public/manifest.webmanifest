@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "LUMOS · Quick Dump",
+  "short_name": "Lumos",
+  "description": "Quick dump ide dari HP, dirapikan Lumi di laptop.",
+  "lang": "id",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
