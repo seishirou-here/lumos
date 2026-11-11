@@ -29,3 +29,10 @@ Tracked decomposed subtasks for OpenCode & Papa:
 - [x] **Task 7: Aesthetic Polish & Mobile PWA Touch Ergonomics Pass**
   - [x] Fine-tune Kuro Sakura & Kuro Midori themes, tactile micro-interactions (`active:scale-[0.98]`).
   - [x] Optimize mobile virtual keyboard handling & quick-dump ergonomics.
+- [x] **Task 8: PWA Service Worker & Full Offline Shell**
+  - Location: `src/web`
+  - [x] Install and configure `vite-plugin-pwa` in `vite.config.ts`.
+  - [x] Precache HTML shell, JS bundles, CSS, Google Fonts, and SVG icons for 100% offline access.
+  - [x] Register Service Worker with auto-update (`registerType: 'autoUpdate'`).
+  - [x] Add update toast / offline-ready notification if needed.
+  - [x] Verify full offline loading (Cache Storage) and PWA manifest criteria.
