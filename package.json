@@ -20,7 +20,8 @@
     "build:server": "npm run build -w @lumos/server",
     "start": "npm run start -w @lumos/server",
     "preview": "npm run preview -w @lumos/web",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "serve:tailscale": "echo Starting Lumos production server on Tailscale... && npm run build && tailscale serve --bg --https=443 http://localhost:3030"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

@@ -81,6 +81,14 @@ export default defineConfig({
         // Keep the bridge CORS whitelist intact while proxying from any dev host
         // (including a phone opening the Vite server over the local network).
         headers: { origin: 'http://localhost:5173' },
+        // Allow SSE connections to stream without Vite buffering the response.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            if (req.url?.includes('/api/memos/events')) {
+              proxyReq.setHeader('Accept', 'text/event-stream');
+            }
+          });
+        },
       },
     },
   },

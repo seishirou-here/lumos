@@ -68,6 +68,51 @@ To ensure seamless, secure, and boundary-free communication between Papa's mobil
    - Server returns list of successfully ingested UUIDs.
    - Client marks items as `sync_status: "synced"` in IndexedDB.
 
+### C. Real-time Multi-Device Sync (SSE)
+
+In addition to the push-then-pull cycle above, Lumos uses **Server-Sent Events (SSE)** for instant cross-device synchronization:
+
+```text
+┌─────────────────────────┐               ┌─────────────────────────────────┐
+│    Device A (Client)    │               │     Laptop Host (Server)        │
+│                         │               │                                 │
+│  EventSource ──────────────────────────►│  GET /api/memos/events (SSE)   │
+│  (persistent HTTP)      │               │                                 │
+│                         │               │    ┌────────────────────────┐   │
+│    Device B (Client)    │   POST dump   │    │ EventEmitter pub/sub   │   │
+│  ─────────────────────────────────────► │    │ (in-memory broadcast)  │   │
+│                         │               │    └──────────┬─────────────┘   │
+│    Device A receives    │ ◄──── SSE ────│               │                │
+│    memos_updated event  │               │   event: memos_updated         │
+│    (instant, no poll)   │               │   data: [{id, content, ...}]   │
+└─────────────────────────┘               └─────────────────────────────────┘
+```
+
+**Endpoint:** `GET /api/memos/events`
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `text/event-stream` |
+| `Cache-Control` | `no-cache, no-transform` |
+| `Connection` | `keep-alive` |
+| `X-Accel-Buffering` | `no` |
+
+**Event types:**
+
+| Event | Trigger | Data |
+|---|---|---|
+| `connected` | Initial handshake | `{"status":"ok"}` |
+| `memos_updated` | `POST /api/memos/dump` upserts memos | JSON array of `MemoItem[]` |
+| `:keepalive` | Every 15 seconds | (comment, no data — prevents proxy timeouts) |
+
+**Client behaviour (`useMemoSync` hook):**
+
+1. Opens an `EventSource` to `/api/memos/events` when the app is hydrated and online.
+2. On `memos_updated` → merges incoming memos into IndexedDB + React state via `mergeServerMemos()`.
+3. On error → disconnects and reconnects with exponential back-off (3 s → 6 s → 12 s → … → 30 s max).
+4. On browser `online` event or tab visibility change → resets back-off and reconnects immediately.
+5. If `EventSource` is unavailable (older browsers) → the existing 20-second health-check polling continues to serve as fallback.
+
 ---
 
 ## 4. Security & Access Control

@@ -56,4 +56,5 @@ export interface HealthStatus {
   timestamp: number;
   version: string;
   db: DbHealth;
+  sseClients?: number;
 }

@@ -13,6 +13,7 @@ import {
   saveMemo,
   updateMemo,
 } from './lib/storage';
+import { useMemoSync } from './lib/useMemoSync';
 import { createMemoId, extractTags } from './lib/utils';
 
 const HEALTH_POLL_INTERVAL = 20_000;
@@ -195,6 +196,22 @@ export default function App() {
     },
     [flushQueue],
   );
+
+  // ── Real-time SSE subscription ──────────────────────────────────────
+  const handleSSEMemos = useCallback(
+    async (incoming: MemoItem[]) => {
+      try {
+        const merged = await mergeServerMemos(incoming);
+        setMemos((previous) => reconcileMemos(previous, merged));
+        setConnection('online');
+      } catch (error) {
+        console.error('Lumos: failed to merge SSE memos into local store.', error);
+      }
+    },
+    [],
+  );
+
+  useMemoSync({ onMemos: handleSSEMemos, isReady: !isHydrating });
 
   const pendingCount = memos.reduce(
     (count, memo) => (memo.status === 'synced' ? count : count + 1),

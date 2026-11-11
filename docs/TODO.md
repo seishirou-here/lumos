@@ -36,3 +36,8 @@ Tracked decomposed subtasks for OpenCode & Papa:
   - [x] Register Service Worker with auto-update (`registerType: 'autoUpdate'`).
   - [x] Add update toast / offline-ready notification if needed.
   - [x] Verify full offline loading (Cache Storage) and PWA manifest criteria.
+- [x] **Task 9: Real-time Multi-Device Sync (SSE / Periodic Fast Polling) & Production Tailscale Tunneling**
+  - Location: `src/web`, `src/server`
+  - [x] Implement Server-Sent Events (SSE) `/api/memos/events` or adaptive fast polling (e.g. 3s–5s when window is visible/active) so new notes created on HP appear immediately on laptop and vice versa.
+  - [x] Ensure `App.tsx` live-updates memo stream upon receiving server push events.
+  - [x] Configure and verify Tailscale connection / serve scripts for zero-friction laptop-to-phone pairing.
