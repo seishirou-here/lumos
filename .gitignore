@@ -27,11 +27,19 @@ coverage/
 # Vite cache
 .vite/
 
-# Local SQLite archive (runtime data, never committed)
+# Local SQLite archive & watcher state (runtime data, never committed)
 src/server/data/
+src/watcher/data/
 *.db
 *.db-journal
 *.db-wal
+
+# Firebase local cache & secrets (NEVER commit service account keys)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+*service-account*.json
+firebase-adminsdk-*.json
 
 # Editors & operating systems
 .vscode/*

@@ -9,11 +9,12 @@ import {
   Copy,
   Loader2,
   RotateCcw,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { Fragment, useEffect, useRef, useState } from 'react';
 
-import type { MemoItem, MemoSyncStatus } from '@shared/types';
+import type { AgyStatus, MemoItem, MemoSyncStatus } from '@shared/types';
 
 import { cn, copyText, formatMemoTime, haptic } from '../lib/utils';
 
@@ -45,20 +46,20 @@ const STATUS_META: Record<
 > = {
   pending: {
     label: 'Offline',
-    hint: 'Tersimpan di perangkat, menunggu koneksi host.',
+    hint: 'Tersimpan lokal di perangkat, menunggu koneksi untuk sync ke cloud.',
     pill: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
     Icon: CloudOff,
   },
   syncing: {
     label: 'Syncing',
-    hint: 'Sedang dikirim ke laptop.',
+    hint: 'Sedang dikirim ke Cloud Firestore.',
     pill: 'border-sky-500/20 bg-sky-500/10 text-sky-300',
     Icon: Loader2,
     spin: true,
   },
   synced: {
-    label: 'Synced',
-    hint: 'Sudah tersinkronisasi di database host.',
+    label: 'Cloud',
+    hint: 'Sudah tersinkronisasi aman di Cloud Firestore.',
     pill: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
     Icon: Check,
   },
@@ -67,6 +68,24 @@ const STATUS_META: Record<
     hint: 'Sinkronisasi terakhir gagal. Akan dicoba lagi.',
     pill: 'border-rose-500/20 bg-rose-500/10 text-rose-300',
     Icon: AlertTriangle,
+  },
+};
+
+const AGY_META: Record<AgyStatus, { label: string; hint: string; pill: string }> = {
+  pending: {
+    label: 'AGY · Pending',
+    hint: 'Menunggu laptop menyala & approval Papa di Antigravity (agy).',
+    pill: 'border-violet-500/35 bg-violet-500/15 text-violet-300',
+  },
+  done: {
+    label: 'AGY · Done',
+    hint: 'Sudah direview & dieksekusi setelah approval Papa di AGY.',
+    pill: 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300',
+  },
+  dismissed: {
+    label: 'AGY · Dismissed',
+    hint: 'Dibatalkan / dilewati saat review di AGY.',
+    pill: 'border-zinc-600/40 bg-zinc-700/25 text-zinc-400',
   },
 };
 
@@ -309,6 +328,19 @@ export function MemoCard({
               Selesai
             </span>
           ) : null}
+
+          {!isTrash && memo.agyStatus && (
+            <span
+              title={AGY_META[memo.agyStatus].hint}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9.5px] font-semibold',
+                AGY_META[memo.agyStatus].pill,
+              )}
+            >
+              <Sparkles className="h-2.5 w-2.5" aria-hidden="true" />
+              {AGY_META[memo.agyStatus].label}
+            </span>
+          )}
         </div>
 
         {/* Right header: Action buttons */}
@@ -418,6 +450,15 @@ export function MemoCard({
         isTrash={isTrash}
         onSelectTag={onSelectTag}
       />
+
+      {memo.agyNote && (
+        <div className="mt-2.5 rounded-xl border border-violet-500/20 bg-violet-500/5 px-3 py-2 text-xs leading-relaxed text-zinc-300">
+          <span className="mr-1.5 text-[10px] font-semibold uppercase tracking-wider text-violet-300">
+            Lumi / AGY:
+          </span>
+          {memo.agyNote}
+        </div>
+      )}
 
       {extraTags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">

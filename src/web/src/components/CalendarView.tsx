@@ -7,7 +7,11 @@ import interactionPlugin from '@fullcalendar/react/interaction';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 import type { CalendarEventItem } from '@shared/types';
 import { cn, haptic } from '../lib/utils';
-import { deleteCalendarEvent, listCalendarEvents, saveCalendarEvent } from '../lib/calendarStorage';
+import {
+  deleteFirestoreCalendarEvent,
+  saveFirestoreCalendarEvent,
+  subscribeCalendarEvents,
+} from '../lib/firestoreCalendar';
 
 type CalendarViewType = 'dayGridMonth' | 'timeGridWeek' | 'listWeek';
 
@@ -46,18 +50,17 @@ export function CalendarView() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const calendarRef = useRef<any>(null);
 
-  const loadEvents = useCallback(async () => {
-    try {
-      const stored = await listCalendarEvents();
-      setEvents(stored);
-    } catch (err) {
-      console.error('Failed to load calendar events:', err);
-    }
-  }, []);
-
   useEffect(() => {
-    void loadEvents();
-  }, [loadEvents]);
+    const unsubscribe = subscribeCalendarEvents(
+      (cloudEvents) => {
+        setEvents(cloudEvents);
+      },
+      (err) => {
+        console.error('Failed to subscribe to Firestore calendar events:', err);
+      },
+    );
+    return () => unsubscribe();
+  }, []);
 
   const updateTitle = useCallback(() => {
     const calendarApi = calendarRef.current?.getApi();
@@ -122,8 +125,7 @@ export function CalendarView() {
       description: newDesc.trim() || undefined,
     };
 
-    await saveCalendarEvent(newEvent);
-    await loadEvents();
+    await saveFirestoreCalendarEvent(newEvent);
 
     setIsModalOpen(false);
     setNewTitle('');
@@ -133,8 +135,7 @@ export function CalendarView() {
 
   const handleDeleteEvent = async (id: string) => {
     haptic();
-    await deleteCalendarEvent(id);
-    await loadEvents();
+    await deleteFirestoreCalendarEvent(id);
     setSelectedEvent(null);
   };
 

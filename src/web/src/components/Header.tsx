@@ -1,13 +1,18 @@
-import { cn, haptic } from '../lib/utils';
+import { LogOut, Sparkles } from 'lucide-react';
+
 import { THEME_META, useTheme } from '../lib/theme';
+import { cn, haptic } from '../lib/utils';
 
 export type ConnectionStatus = 'checking' | 'online' | 'offline';
 
 interface HeaderProps {
   status: ConnectionStatus;
   pendingCount?: number;
-  /** True while a push/pull cycle with the host is in flight. */
+  agyPendingCount?: number;
+  /** True while cloud writes are still flushing. */
   isSyncing?: boolean;
+  onSelectAgyTag?: () => void;
+  onSignOut?: () => void;
 }
 
 const STATUS_META: Record<
@@ -15,20 +20,20 @@ const STATUS_META: Record<
   { label: string; title: string; pill: string; dot: string }
 > = {
   checking: {
-    label: 'Checking',
-    title: 'Mencari host Lumos di laptop...',
+    label: 'Connecting',
+    title: 'Menghubungkan ke Cloud Firestore...',
     pill: 'border-lumos-line bg-lumos-surface/80 text-zinc-400',
     dot: 'bg-zinc-500 text-zinc-500',
   },
   online: {
-    label: 'Connected',
-    title: 'Terhubung ke bridge Lumos di laptop.',
+    label: 'Cloud',
+    title: 'Tersinkronisasi real-time dengan Cloud Firestore.',
     pill: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300 shadow-[0_0_14px_-6px_rgb(52_211_153/0.55)]',
     dot: 'bg-emerald-400 text-emerald-400',
   },
   offline: {
     label: 'Offline',
-    title: 'Host belum terjangkau. Memo tersimpan aman di perangkat ini.',
+    title: 'Offline. Memo & jadwal tersimpan lokal dan akan sync otomatis ke cloud.',
     pill: 'border-amber-500/25 bg-amber-500/10 text-amber-300',
     dot: 'bg-amber-400 text-amber-400',
   },
@@ -36,12 +41,19 @@ const STATUS_META: Record<
 
 const SYNCING_META = {
   label: 'Syncing',
-  title: 'Sedang menyinkronkan memo dengan laptop...',
+  title: 'Mengirim perubahan ke Cloud Firestore...',
   pill: 'border-sky-500/25 bg-sky-500/10 text-sky-300 shadow-[0_0_14px_-6px_rgb(56_189_248/0.55)]',
   dot: 'bg-sky-400 text-sky-400',
 };
 
-export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderProps) {
+export function Header({
+  status,
+  pendingCount = 0,
+  agyPendingCount = 0,
+  isSyncing = false,
+  onSelectAgyTag,
+  onSignOut,
+}: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const themeMeta = THEME_META[theme];
   const nextTheme = theme === 'sakura' ? 'forest' : 'sakura';
@@ -51,7 +63,7 @@ export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderPr
   const meta = syncing ? SYNCING_META : STATUS_META[status];
   const waiting = status === 'offline' && pendingCount > 0;
   const label = waiting ? `Offline · ${pendingCount}` : meta.label;
-  const title = waiting ? `${pendingCount} memo menunggu sinkronisasi ke laptop.` : meta.title;
+  const title = waiting ? `${pendingCount} memo menunggu koneksi untuk sync ke cloud.` : meta.title;
   const breathing = syncing || status === 'online';
 
   const handleThemeToggle = () => {
@@ -60,7 +72,7 @@ export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderPr
   };
 
   return (
-    <header className="sticky top-0 z-20 -mx-4 mb-6 flex items-center justify-between gap-3 border-b border-lumos-line/60 bg-lumos-bg/80 px-4 pb-3.5 pt-[calc(var(--safe-top)+0.875rem)] backdrop-blur-xl transition-colors duration-300 sm:-mx-6 sm:px-6">
+    <header className="sticky top-0 z-20 -mx-4 mb-6 flex items-center justify-between gap-2 border-b border-lumos-line/60 bg-lumos-bg/80 px-4 pb-3.5 pt-[calc(var(--safe-top)+0.875rem)] backdrop-blur-xl transition-colors duration-300 sm:-mx-6 sm:px-6">
       <div className="min-w-0">
         <h1 className="flex items-center text-[17px] font-semibold leading-none tracking-[0.16em] text-zinc-50">
           <span className="brand-mark mr-2 inline-flex" aria-hidden="true">
@@ -79,11 +91,26 @@ export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderPr
           LUMOS
         </h1>
         <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Memos & Tag Tracker
+          Cloud Memos &amp; #agy Inbox
         </p>
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
+        {agyPendingCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              haptic(8);
+              onSelectAgyTag?.();
+            }}
+            title={`${agyPendingCount} memo #agy menunggu review & approval di laptop`}
+            className="flex min-h-9 items-center gap-1 rounded-full border border-violet-500/30 bg-violet-500/15 px-2.5 text-[11px] font-semibold text-violet-300 transition-colors hover:bg-violet-500/25 active:scale-95"
+          >
+            <Sparkles className="h-3 w-3" aria-hidden="true" />
+            <span>{agyPendingCount}</span>
+          </button>
+        )}
+
         <div className="group relative">
           <button
             type="button"
@@ -98,7 +125,7 @@ export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderPr
             >
               {themeMeta.emoji}
             </span>
-            <span key={`${theme}-label`} className="animate-theme-pop capitalize">
+            <span key={`${theme}-label`} className="hidden animate-theme-pop capitalize sm:inline">
               {themeMeta.label}
             </span>
           </button>
@@ -132,6 +159,21 @@ export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderPr
           />
           <span>{label}</span>
         </div>
+
+        {onSignOut && (
+          <button
+            type="button"
+            onClick={() => {
+              haptic(8);
+              onSignOut();
+            }}
+            aria-label="Keluar akun Google"
+            title="Keluar akun Google"
+            className="grid h-9 w-9 place-items-center rounded-full border border-lumos-line bg-lumos-surface/70 text-zinc-400 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 active:scale-95"
+          >
+            <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        )}
       </div>
     </header>
   );

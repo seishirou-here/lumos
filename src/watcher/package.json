@@ -1,0 +1,22 @@
+{
+  "name": "@lumos/watcher",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Always-on Windows watcher and AGY inbox CLI for Project Lumos #agy memos.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit --incremental false -p tsconfig.json",
+    "watch": "node dist/watcher/src/watcher.js",
+    "inbox": "node dist/watcher/src/inbox.js",
+    "control": "node dist/watcher/src/control.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "firebase-admin": "^13.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

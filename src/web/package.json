@@ -6,13 +6,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "build": "tsc --noEmit --incremental false -p tsconfig.json && vite build --configLoader runner",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json"
+    "typecheck": "tsc --noEmit --incremental false -p tsconfig.json && tsc --noEmit --incremental false -p tsconfig.node.json"
   },
   "dependencies": {
     "@fullcalendar/react": "^7.1.5",
     "clsx": "^2.1.1",
+    "firebase": "^11.4.0",
     "idb-keyval": "^6.2.1",
     "lucide-react": "^0.468.0",
     "react": "^19.1.0",

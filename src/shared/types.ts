@@ -6,6 +6,9 @@
 /** Lifecycle of a memo while it lives in the on-device queue. */
 export type MemoSyncStatus = 'pending' | 'syncing' | 'synced' | 'failed';
 
+/** Review lifecycle for memos tagged with `#agy` awaiting laptop approval. */
+export type AgyStatus = 'pending' | 'done' | 'dismissed';
+
 /** A single memo item captured on phone or laptop. */
 export interface MemoItem {
   id: string;
@@ -21,6 +24,12 @@ export interface MemoItem {
   archived?: boolean;
   /** Timestamp when the memo was soft-deleted (30-day retention before permanent delete). */
   deletedAt?: number;
+  /** Queue state when memo includes `#agy` (pending until reviewed & approved in AGY). */
+  agyStatus?: AgyStatus;
+  /** Short outcome summary recorded after AGY executes or dismisses the memo. */
+  agyNote?: string;
+  /** Timestamp when `agyStatus` was last updated. */
+  agyUpdatedAt?: number;
   /** Optional legacy task identifier if migrated from older versions. */
   kanbanTaskId?: string;
 }

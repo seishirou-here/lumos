@@ -1,70 +1,37 @@
 # Project Lumos - Actionable Subtasks (TODO)
 
-Tracked decomposed subtasks for OpenCode & Papa:
+Tracked subtasks for Papa & Lumi:
 
-- [x] **Task 1: Tech Spec & Architecture**
-  - Path: `docs/TECH_SPEC.md`
-  - High-level data model, offline-first philosophy, and system architecture.
-- [x] **Task 2: Dedicated Architecture Specs**
-  - [x] `docs/NETWORKING.md` (Tailscale Mesh, MagicDNS, offline-to-online sync lifecycle)
-  - [x] `docs/TECH_STACK.md` (Unified Full-Stack TypeScript, React PWA + Node.js Express)
-  - [x] `docs/UI_UX_DESIGN.md` (Micro-journaling, stream-of-consciousness, modular extensibility)
-  - [x] `docs/AI_REFINEMENT.md` (9router integration, JSON prompting, fallback safety)
-- [x] **Task 3: Scaffold Frontend Workspace**
-  - Location: `src/web`
-  - Setup base memo stream feed, composer, and offline IndexedDB queue.
-- [x] **Task 4: Server SQLite Archive & Cross-Device Feed Sync**
-  - Location: `src/server`, `src/web`
-  - [x] Setup lightweight SQLite database (`lumos.db`) in `src/server` for persistent memo archiving.
-  - [x] Add `GET /api/memos` endpoint in `src/server` to query memo history with pagination.
-  - [x] Update `src/web` to merge server history into local IndexedDB feed (bi-directional sync between mobile & laptop).
-- [x] **Task 5: Hermes Kanban Bridge & AI Refinement Ingestion (UPDATED / DISABLED)**
-  - Location: `src/server`
-  - [x] Connect dump flow to Lumi Refinement Engine via 9router (`reasoning-lumos`).
-  - [x] Hermes Kanban bridge disabled per user request to allow exploring alternative AI interaction platforms.
-  - [x] AI Refinement engine preserved modularly in `refinement.ts` for future updates.
-- [x] **Task 10: Cancel Hermes Kanban Bridge & Decouple Ingestion**
-  - [x] Remove automatic CLI invocation of `hermes.exe` in `src/server`.
-  - [x] Turn background queue into a disabled no-op; memos are preserved purely in SQLite archive (`lumos.db`).
-  - [x] Keep AI Refinement Engine preserved and ready for on-demand use in future updates.
-- [x] **Task 12: Memo Deletion & Archive System**
-  - Location: `src/web`, `src/server`, `src/shared`
-  - [x] Add `archived` column migration to SQLite `memos` table and `MemoItem` contract.
-  - [x] Add `DELETE /api/memos/:id` and `PATCH /api/memos/:id/archive` endpoints in `src/server`.
-  - [x] Broadcast real-time `memo_deleted` and `memos_updated` events over SSE (`/api/memos/events`).
-  - [x] Add tactile Archive/Restore and two-step Delete actions on `MemoCard.tsx`, plus Active/Archive filter switcher on `MemoStream.tsx`.
-  - [x] Implement offline-resilient pending delete queue in `storage.ts` so offline deletions sync upon reconnection.
-- [ ] **Task 11: Calendar & Scheduling Subsystem (Radicale CalDAV + FullCalendar)**
-  - Location: `src/web`, `src/server`, host configuration
-  - [x] **11.1 Radicale CalDAV Server Setup:**
-    - Configure lightweight Radicale CalDAV server daemon on Papa's laptop (port 5232).
-    - Set up storage backend for standard `.ics` iCalendar records in `src/server/data/radicale_collections`.
-    - Provide `npm run radicale` and `npm run dev:all` scripts in root `package.json`.
-    - Expose over local Wi-Fi / mDNS for mobile synchronization (iOS Calendar / Android DAVx⁵).
-  - [x] **11.2 Frontend FullCalendar Integration:**
-    - Install `@fullcalendar/react` in `src/web`.
-    - Build `CalendarView.tsx` component with seamless tab navigation (Feed Stream vs Calendar).
-    - Skin FullCalendar using Lumos CSS variable tokens (*Kuro Sakura* & *Kuro Midori* OLED dark palette).
-    - Offline-first calendar storage via IndexedDB (`calendarStorage.ts`).
-  - [ ] **11.3 CalDAV Bridge & Event Management:**
-    - Integrate CalDAV client in Lumos bridge/frontend to fetch, create, and update events.
-    - Link calendar events with captured memos/dumps (e.g. converting a quick dump with date/time into a CalDAV event).
-    - Verify bidirectional sync between mobile native calendar apps and Lumos FullCalendar.
-- [x] **Task 6: Live End-to-End Testing & Mobile Tailscale Validation**
-  - [x] Connect live 9router auth key (`ROUTER_API_KEY`) for full AI refinement pipeline.
-  - [x] Test mobile capture over Tailscale mesh and verify cards landing in Kanban `triage`.
-- [x] **Task 7: Aesthetic Polish & Mobile PWA Touch Ergonomics Pass**
-  - [x] Fine-tune Kuro Sakura & Kuro Midori themes, tactile micro-interactions (`active:scale-[0.98]`).
-  - [x] Optimize mobile virtual keyboard handling & quick-dump ergonomics.
-- [x] **Task 8: PWA Service Worker & Full Offline Shell**
-  - Location: `src/web`
-  - [x] Install and configure `vite-plugin-pwa` in `vite.config.ts`.
-  - [x] Precache HTML shell, JS bundles, CSS, Google Fonts, and SVG icons for 100% offline access.
-  - [x] Register Service Worker with auto-update (`registerType: 'autoUpdate'`).
-  - [x] Add update toast / offline-ready notification if needed.
-  - [x] Verify full offline loading (Cache Storage) and PWA manifest criteria.
-- [x] **Task 9: Real-time Multi-Device Sync (SSE / Periodic Fast Polling) & Production Tailscale Tunneling**
-  - Location: `src/web`, `src/server`
-  - [x] Implement Server-Sent Events (SSE) `/api/memos/events` or adaptive fast polling (e.g. 3s–5s when window is visible/active) so new notes created on HP appear immediately on laptop and vice versa.
-  - [x] Ensure `App.tsx` live-updates memo stream upon receiving server push events.
-  - [x] Configure and verify Tailscale connection / serve scripts for zero-friction laptop-to-phone pairing.
+## Completed Foundation (v0.1 – v0.2)
+- [x] **Tasks 1–4, 7–9:** Monorepo scaffold, Kuro Sakura & Kuro Midori themes, PWA Service Worker (`vite-plugin-pwa`), offline-first memo stream, real-time sync.
+- [x] **Task 10 & Cleanup:** Removed Hermes Kanban & 9router AI refinement pipeline (`kanban.ts`, `queue.ts`, `refinement.ts`) to eliminate external API costs.
+- [x] **Task 12:** Memo checklist (`completed`), tag tracker, archive/restore, and 30-day soft-delete trash system.
+- [x] **Task 11.2:** FullCalendar UI (`CalendarView.tsx`) styled with Lumos OLED dark palette.
+
+## Active Milestone (v0.3 — Full Cloud Firestore + `#agy` Always-On Watcher)
+- [x] **Task 13.1: Checkpoint & Architecture Docs Update**
+  - [x] Commit v0.2.0 checkpoint (`1376c46`).
+  - [x] Update `TECH_SPEC.md`, `NETWORKING.md`, `TECH_STACK.md`, `TODO.md`, and create `SETUP_FIREBASE.md`.
+  - [x] Add `firebase.json`, `firestore.rules`, `firestore.indexes.json`.
+  - [x] Extend `MemoItem` in `src/shared/types.ts` with `agyStatus`, `agyNote`, and `agyUpdatedAt`.
+- [x] **Task 13.2: Migrate `src/web` (Memos + Calendar) to Cloud Firestore**
+  - [x] Install `firebase` SDK and add `src/web/src/lib/firebase.ts` (persistent IndexedDB cache + Google Auth).
+  - [x] Implement `firestoreMemos.ts` and `firestoreCalendar.ts` with real-time `onSnapshot`.
+  - [x] Add `AuthGate.tsx` login screen & setup guide fallback.
+  - [x] Auto-tag `#agy` memos with `agyStatus: 'pending'` and render AGY status badges + outcome notes in `MemoCard.tsx`.
+  - [x] Connect `CalendarView.tsx` to Firestore `calendarEvents`.
+- [x] **Task 13.3: Always-On Laptop Watcher & AGY Inbox CLI (`src/watcher`)**
+  - [x] Create `@lumos/watcher` workspace with `firebase-admin` real-time `#agy` listener.
+  - [x] Implement native Windows Toast notifications (`notify.ts`).
+  - [x] Implement `inbox.ts` CLI (`list`, `done`, `dismiss`, `test-toast`).
+  - [x] Implement Windows Startup Task Scheduler manager (`watcher:install`, `watcher:start`, `watcher:stop`, `watcher:status`).
+  - [x] Create AGY skill (`lumos-inbox/SKILL.md`) for Human-in-the-Middle review & approval.
+- [ ] **Task 13.4: Firebase Project Provisioning & End-to-End Validation**
+  - [ ] Papa creates new Firebase project (Spark Free), enables Google Auth & Firestore, and adds `src/web/.env` + `src/watcher/service-account.json`.
+  - [ ] Deploy Firestore Rules & PWA to Firebase Hosting (`npm run deploy`).
+  - [ ] Register & start `LumosAgyWatcher` (`npm run watcher:install`).
+  - [ ] Test mobile `#agy` dump while laptop offline → boot laptop → verify Windows Toast → approve in `agy`.
+
+## Future Roadmap (See `docs/ROADMAP.md`)
+- [ ] **Phase 2:** Semester Timeline View (`#kuliah`, `#event`, `#personal`).
+- [ ] **Phase 3:** PWA Web Push Notifications & Reminders.
