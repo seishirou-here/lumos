@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import {
@@ -10,14 +11,18 @@ import {
   hasServiceAccount,
 } from './firebase.js';
 
-const TASK_NAME = 'LumosAgyWatcher';
+const STARTUP_VBS_NAME = 'LumosAgyWatcher.vbs';
 
 function getPaths() {
   const watcherRoot = getWatcherRoot();
   const dataDir = getWatcherDataDir();
+  const appData = process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming');
+  const startupDir = path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup');
   return {
     watcherRoot,
     dataDir,
+    startupDir,
+    startupVbs: path.join(startupDir, STARTUP_VBS_NAME),
     pidFile: path.join(dataDir, 'watcher.pid'),
     vbsLauncher: path.join(dataDir, 'launch-watcher.vbs'),
     watcherScript: path.join(watcherRoot, 'dist', 'watcher', 'src', 'watcher.js'),
@@ -38,32 +43,29 @@ function readRunningPid(pidFile: string): number | null {
   }
 }
 
-function writeHiddenVbsLauncher(vbsPath: string, watcherScript: string): void {
+function buildHiddenVbsContent(watcherScript: string): string {
   const nodeExe = process.execPath.replace(/"/g, '""');
   const scriptEscaped = watcherScript.replace(/"/g, '""');
-  const vbsContent = [
+  return [
     'Set WshShell = CreateObject("WScript.Shell")',
     `WshShell.Run """${nodeExe}"" ""${scriptEscaped}""", 0, False`,
     '',
   ].join('\r\n');
-  fs.writeFileSync(vbsPath, vbsContent, 'utf8');
 }
 
-function runSchtasks(args: string[]): { ok: boolean; output: string } {
-  try {
-    const out = execFileSync('schtasks.exe', args, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: true,
-    });
-    return { ok: true, output: out.trim() };
-  } catch (error: unknown) {
-    const err = error as { stdout?: string; stderr?: string; message?: string };
-    return {
-      ok: false,
-      output: (err.stderr || err.stdout || err.message || '').trim(),
-    };
+function enableAutoStart(vbsLauncher: string, startupDir: string, startupVbs: string, watcherScript: string): void {
+  const content = buildHiddenVbsContent(watcherScript);
+  fs.writeFileSync(vbsLauncher, content, 'utf8');
+  fs.mkdirSync(startupDir, { recursive: true });
+  fs.writeFileSync(startupVbs, content, 'utf8');
+}
+
+function disableAutoStart(startupVbs: string): boolean {
+  if (fs.existsSync(startupVbs)) {
+    fs.unlinkSync(startupVbs);
+    return true;
   }
+  return false;
 }
 
 function startBackgroundProcess(vbsLauncher: string): void {
@@ -107,28 +109,11 @@ function ensureBuilt(watcherScript: string): void {
   }
 }
 
-async function handleInstall(): Promise<void> {
-  const { pidFile, vbsLauncher, watcherScript } = getPaths();
+async function handleInstallOrStart(): Promise<void> {
+  const { pidFile, vbsLauncher, startupDir, startupVbs, watcherScript } = getPaths();
   ensureBuilt(watcherScript);
-  writeHiddenVbsLauncher(vbsLauncher, watcherScript);
-
-  const taskCmd = `wscript.exe "${vbsLauncher}"`;
-  const created = runSchtasks([
-    '/Create',
-    '/TN',
-    TASK_NAME,
-    '/SC',
-    'ONLOGON',
-    '/TR',
-    taskCmd,
-    '/F',
-  ]);
-
-  if (!created.ok) {
-    console.warn(`Peringatan: gagal mendaftarkan Task Scheduler (${created.output}).`);
-  } else {
-    console.log(`Task Scheduler "${TASK_NAME}" terdaftar (auto-start setiap Windows logon).`);
-  }
+  enableAutoStart(vbsLauncher, startupDir, startupVbs, watcherScript);
+  console.log(`Auto-start Windows aktif (${startupVbs}).`);
 
   if (!hasServiceAccount()) {
     console.log(
@@ -146,58 +131,28 @@ async function handleInstall(): Promise<void> {
   }
 }
 
-async function handleStart(): Promise<void> {
-  const { pidFile, vbsLauncher, watcherScript } = getPaths();
-  ensureBuilt(watcherScript);
-  writeHiddenVbsLauncher(vbsLauncher, watcherScript);
-
-  const enabled = runSchtasks(['/Change', '/TN', TASK_NAME, '/ENABLE']);
-  if (!enabled.ok) {
-    // Task not registered yet — install it automatically.
-    await handleInstall();
-    return;
-  }
-
-  console.log(`Auto-start "${TASK_NAME}" diaktifkan kembali.`);
-
-  if (!hasServiceAccount()) {
-    throw new Error(
-      `service-account.json belum ditemukan di ${getServiceAccountPath()}. Lihat docs/SETUP_FIREBASE.md.`,
-    );
-  }
-
-  if (!readRunningPid(pidFile)) {
-    startBackgroundProcess(vbsLauncher);
-    console.log('Lumos #agy watcher berjalan di background.');
-  } else {
-    console.log('Lumos #agy watcher sudah aktif.');
-  }
-}
-
 function handleStop(): void {
-  const { pidFile } = getPaths();
+  const { pidFile, startupVbs } = getPaths();
   const stopped = stopRunningProcess(pidFile);
   console.log(stopped ? 'Lumos #agy watcher dihentikan.' : 'Watcher sedang tidak berjalan.');
 
-  const disabled = runSchtasks(['/Change', '/TN', TASK_NAME, '/DISABLE']);
-  if (disabled.ok) {
-    console.log(`Auto-start "${TASK_NAME}" dinonaktifkan sampai Papa jalankan npm run watcher:start.`);
-  }
+  const disabled = disableAutoStart(startupVbs);
+  console.log(
+    disabled
+      ? 'Auto-start Windows dinonaktifkan sampai Papa jalankan: npm run watcher:start'
+      : 'Auto-start Windows sudah dalam kondisi nonaktif.',
+  );
 }
 
 async function handleStatus(): Promise<void> {
-  const { pidFile } = getPaths();
+  const { pidFile, startupVbs } = getPaths();
   const pid = readRunningPid(pidFile);
-  const taskQuery = runSchtasks(['/Query', '/TN', TASK_NAME, '/FO', 'LIST']);
-  const taskLine = taskQuery.ok
-    ? taskQuery.output
-        .split(/\r?\n/)
-        .find((l) => /Status:|Scheduled Task State:/i.test(l))
-        ?.trim() ?? 'Registered'
-    : 'Not installed';
+  const autoStartEnabled = fs.existsSync(startupVbs);
 
   console.log(`Watcher Process : ${pid ? `RUNNING (PID ${pid})` : 'STOPPED'}`);
-  console.log(`Auto-Start Task : ${TASK_NAME} (${taskLine})`);
+  console.log(
+    `Auto-Start      : ${autoStartEnabled ? `ENABLED (${startupVbs})` : 'DISABLED'}`,
+  );
   console.log(
     `Service Account : ${hasServiceAccount() ? `FOUND (${getServiceAccountPath()})` : `MISSING (${getServiceAccountPath()})`}`,
   );
@@ -209,17 +164,17 @@ async function handleStatus(): Promise<void> {
       const activeCount = snap.docs.filter((d) => !d.data().deletedAt && !d.data().archived).length;
       console.log(`Pending #agy    : ${activeCount} memo(s)`);
     } catch (error) {
-      console.log(`Pending #agy    : error (${error instanceof Error ? error.message : String(error)})`);
+      console.log(
+        `Pending #agy    : error (${error instanceof Error ? error.message : String(error)})`,
+      );
     }
   }
 }
 
 async function main(): Promise<void> {
   const cmd = process.argv[2] ?? 'status';
-  if (cmd === 'install') {
-    await handleInstall();
-  } else if (cmd === 'start') {
-    await handleStart();
+  if (cmd === 'install' || cmd === 'start') {
+    await handleInstallOrStart();
   } else if (cmd === 'stop') {
     handleStop();
   } else if (cmd === 'status') {
