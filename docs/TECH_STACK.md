@@ -27,6 +27,7 @@ Designed for instant cold-starts, offline durability, and zero-latency input cap
 | **Framework** | **React + TypeScript** | Robust ecosystem, component-driven, predictable state management. |
 | **Build Tool** | **Vite** | Sub-second HMR, micro-bundle output (~80 KB gzipped). |
 | **PWA Engine** | **`vite-plugin-pwa`** | Automatic Service Worker generation, offline asset caching, web app manifest for "Add to Home Screen". |
+| **Calendar Engine** | **FullCalendar (React)** | Declarative, feature-rich calendar engine supporting Month (DayGrid), Week/Day (TimeGrid), and Agenda views, customizable with Lumos CSS tokens. |
 | **Styling** | **Tailwind CSS** | Mobile-first utility classes, native dark-mode ergonomics, minimal CSS footprint. |
 | **Offline Storage** | **`idb-keyval` (IndexedDB)** | Lightweight (< 1 KB) promise-based key-value wrapper around browser IndexedDB. Handles offline queues safely without localStorage quota limits. |
 | **Icons** | **Lucide React** | Clean, minimalist, and lightweight icon set. |
@@ -44,7 +45,7 @@ Designed as a lightweight, dependable local daemon running on Papa's laptop:
 | **Dev Runner** | **`tsx`** | Blazing-fast TypeScript execution without compilation overhead during development. |
 | **Validation** | **Zod** | Runtime payload validation for incoming mobile memos. |
 | **Local Archive DB** | **`node:sqlite` (Node v24 Built-in)** | Zero external dependencies, native C-speed SQLite with WAL mode, persistent cross-device feed synchronization. |
-| **Hermes Bridge** | **`node:child_process` (execFile)** | Calls `hermes kanban create` through the official CLI interface, insulating Lumos from internal database migrations. |
+| **CalDAV Calendar Daemon** | **Radicale** | Lightweight, zero-bloat self-hosted CalDAV server storing standard `.ics` (RFC 5545/4791) files. Enables native mobile sync (iOS / DAVx⁵) over Tailscale without third-party cloud lock-in. |
 | **AI Client** | **Native `fetch` / OpenAI SDK** | Lightweight HTTP client to call the local/configured LLM endpoint for text refinement. |
 | **Security** | **CORS + Dotenv** | Restricted origins (Tailscale mesh & localhost) and bearer token authentication. |
 

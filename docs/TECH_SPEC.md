@@ -9,7 +9,9 @@
 
 ## 1. Project Overview & Philosophy
 
-Project Lumos is designed to capture thoughts, ideas, and tasks the instant they occur on mobile devices with zero friction, ensure resilient storage regardless of host network availability, refine raw thoughts through Lumi AI on the host laptop, and inject structured cards into the Hermes Kanban `triage` lane.
+Project Lumos is designed to capture thoughts, ideas, and tasks the instant they occur on mobile devices with zero friction, ensure resilient storage regardless of host network availability, archive raw and refined thoughts through the Lumos Host Bridge, and enable flexible AI interactions on the host data.
+
+> **Note (Architecture Update):** The automated Hermes Kanban bridge has been disabled per user request. Memos now persist directly in SQLite (`lumos.db`) with real-time SSE syncing across devices. The Lumi AI Refinement Engine is preserved modularly for on-demand use and future AI platform updates.
 
 ### Core Principles
 - **Zero Friction on Mobile:** Quick-dump interface optimized for instant typing without worrying about format, syntax, or typos.
@@ -25,29 +27,19 @@ Project Lumos is designed to capture thoughts, ideas, and tasks the instant they
 ┌────────────────────────────────────────────────────────┐
 │                   HP Papa (Mobile PWA)                 │
 │                                                        │
-│  [ Text / Quick Composer ]                             │
-│             │                                          │
-│             ▼                                          │
-│  [ Local Queue (IndexedDB) ] ──► (Status: pending)     │
-└─────────────┬──────────────────────────────────────────┘
-              │ (Sync Protocol: LAN / Tailscale / Tunnel)
-              ▼
-┌────────────────────────────────────────────────────────┐
-│                   Laptop (Lumos Server)                │
-│                                                        │
-│  [ Ingestion API (/api/dump) ]                         │
-│             │                                          │
-│             ▼                                          │
-│  [ Lumi Refinement Engine ]                            │
-│    - Title extraction (concise & focused)              │
-│    - Content structuring & key bullet points           │
-│    - Raw text preservation (unaltered backup)          │
-│             │                                          │
-│             ▼                                          │
-│  [ Hermes Kanban Bridge ]                              │
-│    - Injects into column: 'triage'                     │
-│    - Card status: Passive (Human-in-the-Middle)        │
-└────────────────────────────────────────────────────────┘
+│  [ Quick Composer ]  ──►  [ Local Queue (IndexedDB) ]  │
+│  [ Calendar View (FullCalendar) ]                      │
+└─────────────┬──────────────────────────┬───────────────┘
+              │ (Sync Protocol: Tailscale / LAN)
+              ▼                          ▼
+┌─────────────────────────────┐  ┌───────────────────────┐
+│    Laptop (Lumos Server)    │  │ Radicale CalDAV Server│
+│                             │  │                       │
+│  [ Ingestion API / SSE ]    │  │ [ CalDAV Protocol ]   │
+│  [ SQLite lumos.db ]        │  │ [ Standard .ics Store]│
+│  [ Preserved Lumi Engine ]  │  │ (Syncs to Mobile via  │
+│                             │  │  Tailscale/DAVx⁵/iOS) │
+└─────────────────────────────┘  └───────────────────────┘
 ```
 
 ---
@@ -89,25 +81,24 @@ Project Lumos is designed to capture thoughts, ideas, and tasks the instant they
   3. *Optimistic Stream:* Newly captured memos appear in the UI stream instantly.
 - **Execution:** Bridges refined payloads into Hermes Kanban CLI (`hermes kanban create ...`).
 
-### C. Lumi Refinement Engine
-- **Primary Role:** Formats messy thoughts into clean, structured Kanban cards.
+### C. Lumi Refinement Engine (Preserved for Future Update)
+- **Primary Role:** Modular structuring utility, currently preserved for on-demand use and future AI platforms.
 - **Refinement Strategy:**
   1. Concise title generation (3–7 words).
   2. Contextual summary and actionable key points.
   3. Strict preservation of original raw text in a dedicated quote block.
-- **Target Schema in Kanban:**
-  ```markdown
-  ### 💡 Ringkasan Ide
-  <Deskripsi terstruktur hasil kurasi Lumi>
 
-  ### 🎯 Poin-Poin Kunci
-  - Poin 1
-  - Poin 2
-
-  ---
-  > 📝 **Raw Mobile Dump:**
-  > "<Teks asli dari HP>"
-  ```
+### D. Calendar & Scheduling Subsystem (Radicale CalDAV + FullCalendar)
+- **Primary Role:** Unified personal and academic schedule management with full offline-first self-hosted privacy.
+- **Client Component (`FullCalendar` in `src/web`):**
+  - Integrated via `@fullcalendar/react` with DayGrid (month), TimeGrid (week/day), and List views.
+  - Styled with Lumos OLED obsidian dark themes (*Kuro Sakura* `#fb7185` and *Kuro Midori* `#34d399`).
+  - Supports interactive event creation, filtering by tag (`#kuliah`, `#event`, `#personal`), and memo association.
+- **Server Component (`Radicale CalDAV`):**
+  - Lightweight, standards-compliant (RFC 4791 / RFC 5545) CalDAV server running on Papa's host laptop.
+  - Stores calendar events as standard `.ics` (iCalendar) files locally.
+  - Multi-device interoperability: Native mobile sync over Tailscale via iOS Calendar or Android DAVx⁵, alongside the Lumos FullCalendar interface.
+  - Bridge integration: Lumos server connects to Radicale to synchronize event metadata with memos and timeline items.
 
 ---
 
@@ -131,8 +122,10 @@ The following topics will be explored and specified in dedicated documents under
 ## 5. Implementation Roadmap
 
 - [x] **Milestone 1:** High-Level Architecture & Tech Spec (`docs/TECH_SPEC.md`).
-- [ ] **Milestone 2:** Deep-dive specs (`NETWORKING.md`, `TECH_STACK.md`, `UI_UX_DESIGN.md`, `AI_REFINEMENT.md`).
-- [ ] **Milestone 3:** Client Scaffolding (`src/web`) with Offline Queue.
-- [ ] **Milestone 4:** Host Bridge Server & Hermes Kanban Ingestion (`src/server`).
-- [ ] **Milestone 5:** AI Refinement Engine Integration.
-- [ ] **Milestone 6:** End-to-End Field Testing & PWA Deployment.
+- [x] **Milestone 2:** Deep-dive specs (`NETWORKING.md`, `TECH_STACK.md`, `UI_UX_DESIGN.md`, `AI_REFINEMENT.md`).
+- [x] **Milestone 3:** Client Scaffolding (`src/web`) with Offline Queue & PWA Shell.
+- [x] **Milestone 4:** Host Bridge Server (`src/server`) with SQLite Archive & Real-time SSE.
+- [x] **Milestone 5:** Modular AI Refinement Engine Preserved (9router).
+- [ ] **Milestone 6:** Radicale CalDAV Server Daemon & Tailscale Setup on Host.
+- [ ] **Milestone 7:** FullCalendar Client Component & Multi-View Navigation (Feed / Calendar).
+- [ ] **Milestone 8:** Calendar Event Creation from Quick-Dumps & Bidirectional Mobile CalDAV Sync.

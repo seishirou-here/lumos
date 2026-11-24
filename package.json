@@ -1,8 +1,8 @@
 {
   "name": "lumos",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Project Lumos - mobile quick-dump and AI-refined ingestion to Hermes Kanban.",
+  "description": "Project Lumos - offline-first memos with checklist and metadata tag tracker.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -21,7 +21,8 @@
     "start": "npm run start -w @lumos/server",
     "preview": "npm run preview -w @lumos/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "serve:tailscale": "echo Starting Lumos production server on Tailscale... && npm run build && tailscale serve --bg --https=443 http://localhost:3030"
+    "radicale": "python -m radicale --config src/server/radicale/config",
+    "dev:all": "concurrently -n web,server,caldav -c cyan,magenta,yellow \"npm run dev:web\" \"npm run dev:server\" \"npm run radicale\""
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

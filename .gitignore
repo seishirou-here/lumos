@@ -39,3 +39,6 @@ src/server/data/
 .idea/
 .DS_Store
 Thumbs.db
+
+docs/
+prompt/

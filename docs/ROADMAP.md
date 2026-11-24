@@ -23,10 +23,10 @@ Project Lumos berevolusi dari sekadar aplikasi *mobile quick-dump* menjadi ekosi
      - **Calendar View:** Tampilan agenda harian/mingguan/bulanan.
      - **Semester Timeline View:** Visualisasi garis waktu kegiatan kuliah & event.
    - Menggunakan token desain khas Lumos (*Kuro Sakura* & *Kuro Midori*) berbasis kanvas OLED `#09090b`.
-2. **Delete / Archive Memos:**
-   - Menambahkan gesture swipe / aksi hapus pada kartu memo (`MemoCard.tsx`).
-   - Penambahan endpoint `DELETE /api/memos/:id` di `src/server`.
-   - Propagasi penghapusan di IndexedDB lokal dan SQLite `lumos.db` via event SSE.
+2. **Delete / Archive Memos (COMPLETED):**
+   - [x] Menambahkan aksi arsip & konfirmasi hapus dua-langkah pada kartu memo (`MemoCard.tsx`) serta filter tab Aktif / Arsip di `MemoStream.tsx`.
+   - [x] Penambahan endpoint `DELETE /api/memos/:id` dan `PATCH /api/memos/:id/archive` di `src/server`.
+   - [x] Propagasi penghapusan dan pengarsipan di IndexedDB lokal dan SQLite `lumos.db` via event SSE (`memo_deleted` & `memos_updated`).
 
 ---
 
@@ -52,10 +52,12 @@ Project Lumos berevolusi dari sekadar aplikasi *mobile quick-dump* menjadi ekosi
 
 ---
 
-### 🗓️ Phase 4 (Minggu 4): Google Calendar Bi-Directional Sync
-*Fokus: Jembatan jadwal eksternal ke ekosistem kalender Google.*
+### 🗓️ Phase 4 (Minggu 4): CalDAV Radicale Integration & External Calendar Sync
+*Fokus: Ekosistem kalender mandiri (self-hosted) dengan CalDAV Radicale dan integrasi kalender eksternal.*
 
-1. **Google Calendar API Integration:**
-   - Integrasi server-side OAuth / Service Account di `src/server`.
-   - Ekspor otomatis agenda/jadwal dari memo Lumos langsung ke Google Calendar akun Papa.
-   - Pembacaan agenda Google Calendar untuk dirender di Calendar View Lumos.
+1. **Radicale CalDAV Server Integration:**
+   - Setup daemon CalDAV lokal Radicale pada laptop host.
+   - Sinkronisasi standar RFC 4791/5545 `.ics` langsung dengan FullCalendar di frontend `src/web`.
+   - Sinkronisasi ke smartphone Papa melalui Tailscale menggunakan aplikasi kalender native (iOS Calendar atau DAVx⁵ di Android).
+2. **Optional External Calendar Bi-Directional Sync:**
+   - Ekspor/impor agenda antara Radicale CalDAV dan Google Calendar via service account/OAuth jika diperlukan.

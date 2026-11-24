@@ -1,15 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Calendar as CalendarIcon, MessageSquareText } from 'lucide-react';
 
 import type { MemoItem, MemoSyncStatus } from '@shared/types';
 
+import { CalendarView } from './components/CalendarView';
 import { Composer } from './components/Composer';
 import { Header, type ConnectionStatus } from './components/Header';
 import { MemoStream } from './components/MemoStream';
-import { checkHealth, dumpMemos, fetchMemos } from './lib/api';
 import {
+  archiveServerMemo,
+  checkHealth,
+  completeServerMemo,
+  deleteServerMemo,
+  dumpMemos,
+  fetchMemos,
+  restoreServerMemo,
+} from './lib/api';
+import {
+  clearPendingDelete,
+  getPendingDeleteIds,
   getPendingMemos,
   listMemos,
   mergeServerMemos,
+  queuePendingDelete,
+  removeMemo,
   saveMemo,
   updateMemo,
 } from './lib/storage';
@@ -36,7 +50,9 @@ function reconcileMemos(previous: MemoItem[], merged: MemoItem[]): MemoItem[] {
 }
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<'stream' | 'calendar'>('stream');
   const [memos, setMemos] = useState<MemoItem[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string | undefined>(undefined);
   const [connection, setConnection] = useState<ConnectionStatus>('checking');
   const [isHydrating, setIsHydrating] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -80,6 +96,17 @@ export default function App() {
     let pushError: unknown;
 
     try {
+      // 0. Flush any pending offline permanent deletions before syncing memos.
+      const pendingDeleteIds = await getPendingDeleteIds();
+      if (pendingDeleteIds.length > 0) {
+        await Promise.allSettled(
+          pendingDeleteIds.map(async (id) => {
+            await deleteServerMemo(id, { permanent: true });
+            await clearPendingDelete(id);
+          }),
+        );
+      }
+
       const pending = await getPendingMemos();
 
       // 1. Push local unpublished memos to the host archive.
@@ -104,10 +131,13 @@ export default function App() {
         }
       }
 
-      // 2. Pull the host archive and merge it into IndexedDB + React state.
+      // 2. Pull active and trash memos from the host archive and merge into IndexedDB + React state.
       try {
-        const serverMemos = await fetchMemos({ limit: 200 });
-        const merged = await mergeServerMemos(serverMemos);
+        const [serverActive, serverTrash] = await Promise.all([
+          fetchMemos({ limit: 200 }),
+          fetchMemos({ limit: 100, trash: true }),
+        ]);
+        const merged = await mergeServerMemos([...serverActive, ...serverTrash]);
         setMemos((previous) => reconcileMemos(previous, merged));
         setConnection('online');
       } catch (error) {
@@ -180,6 +210,7 @@ export default function App() {
         content,
         createdAt: Date.now(),
         status: 'pending',
+        completed: false,
         ...(tags.length > 0 ? { tags } : {}),
       };
 
@@ -197,6 +228,177 @@ export default function App() {
     [flushQueue],
   );
 
+  const handleToggleComplete = useCallback(
+    async (id: string, completed: boolean) => {
+      const completedAt = completed ? Date.now() : undefined;
+
+      setMemos((previous) =>
+        previous.map((memo) =>
+          memo.id === id ? { ...memo, completed, completedAt, status: 'pending' } : memo,
+        ),
+      );
+
+      try {
+        await updateMemo(id, { completed, completedAt, status: 'pending' });
+      } catch (error) {
+        console.error('Lumos: failed to update completed state locally.', error);
+      }
+
+      try {
+        const updated = await completeServerMemo(id, completed);
+        if (updated) {
+          await updateMemo(id, {
+            completed: updated.completed,
+            completedAt: updated.completedAt,
+            status: 'synced',
+          });
+          setMemos((previous) =>
+            previous.map((memo) =>
+              memo.id === id
+                ? {
+                    ...memo,
+                    completed: updated.completed,
+                    completedAt: updated.completedAt,
+                    status: 'synced',
+                  }
+                : memo,
+            ),
+          );
+          return;
+        }
+      } catch {
+        // Offline or unreachable: stays pending and will flush on reconnect.
+      }
+
+      void flushQueue();
+    },
+    [flushQueue],
+  );
+
+  const handleArchiveMemo = useCallback(
+    async (id: string, archived: boolean) => {
+      setMemos((previous) =>
+        previous.map((memo) =>
+          memo.id === id ? { ...memo, archived, status: 'pending' } : memo,
+        ),
+      );
+
+      try {
+        await updateMemo(id, { archived, status: 'pending' });
+      } catch (error) {
+        console.error('Lumos: failed to update archive state locally.', error);
+      }
+
+      try {
+        const updated = await archiveServerMemo(id, archived);
+        if (updated) {
+          await updateMemo(id, { archived, status: 'synced' });
+          setMemos((previous) =>
+            previous.map((memo) =>
+              memo.id === id ? { ...memo, archived, status: 'synced' } : memo,
+            ),
+          );
+          return;
+        }
+      } catch {
+        // Offline or unreachable: the memo remains `pending` and will sync on next flushQueue.
+      }
+
+      void flushQueue();
+    },
+    [flushQueue],
+  );
+
+  // Soft-delete: Move to trash (30-day retention)
+  const handleDeleteMemo = useCallback(
+    async (id: string) => {
+      const deletedAt = Date.now();
+
+      setMemos((previous) =>
+        previous.map((memo) =>
+          memo.id === id ? { ...memo, deletedAt, status: 'pending' } : memo,
+        ),
+      );
+
+      try {
+        await updateMemo(id, { deletedAt, status: 'pending' });
+      } catch (error) {
+        console.error('Lumos: failed to soft-delete memo locally.', error);
+      }
+
+      try {
+        const res = await deleteServerMemo(id, { permanent: false });
+        if (res.memo) {
+          await updateMemo(id, { deletedAt: res.memo.deletedAt, status: 'synced' });
+          setMemos((previous) =>
+            previous.map((memo) =>
+              memo.id === id ? { ...memo, deletedAt: res.memo!.deletedAt, status: 'synced' } : memo,
+            ),
+          );
+          return;
+        }
+      } catch {
+        // Offline: memo remains marked deletedAt locally and syncs on flush.
+      }
+
+      void flushQueue();
+    },
+    [flushQueue],
+  );
+
+  // Restore soft-deleted memo from trash
+  const handleRestoreMemo = useCallback(
+    async (id: string) => {
+      setMemos((previous) =>
+        previous.map((memo) =>
+          memo.id === id ? { ...memo, deletedAt: undefined, status: 'pending' } : memo,
+        ),
+      );
+
+      try {
+        await updateMemo(id, { deletedAt: undefined, status: 'pending' });
+      } catch (error) {
+        console.error('Lumos: failed to restore memo locally.', error);
+      }
+
+      try {
+        const updated = await restoreServerMemo(id);
+        if (updated) {
+          await updateMemo(id, { deletedAt: undefined, status: 'synced' });
+          setMemos((previous) =>
+            previous.map((memo) =>
+              memo.id === id ? { ...memo, deletedAt: undefined, status: 'synced' } : memo,
+            ),
+          );
+          return;
+        }
+      } catch {
+        // Offline: stays restored locally and will sync on flush.
+      }
+
+      void flushQueue();
+    },
+    [flushQueue],
+  );
+
+  // Permanent immediate deletion (called from Trash tab)
+  const handlePermanentDeleteMemo = useCallback(async (id: string) => {
+    setMemos((previous) => previous.filter((memo) => memo.id !== id));
+
+    try {
+      await Promise.all([removeMemo(id), queuePendingDelete(id)]);
+    } catch (error) {
+      console.error('Lumos: failed to permanently remove memo locally.', error);
+    }
+
+    try {
+      await deleteServerMemo(id, { permanent: true });
+      await clearPendingDelete(id);
+    } catch {
+      // Offline: queued in pendingDeleteStore and will flush on reconnect.
+    }
+  }, []);
+
   // ── Real-time SSE subscription ──────────────────────────────────────
   const handleSSEMemos = useCallback(
     async (incoming: MemoItem[]) => {
@@ -211,7 +413,20 @@ export default function App() {
     [],
   );
 
-  useMemoSync({ onMemos: handleSSEMemos, isReady: !isHydrating });
+  const handleSSEMemoDeleted = useCallback(async (id: string) => {
+    setMemos((previous) => previous.filter((memo) => memo.id !== id));
+    try {
+      await Promise.all([removeMemo(id), clearPendingDelete(id)]);
+    } catch (error) {
+      console.error('Lumos: failed to apply SSE memo deletion locally.', error);
+    }
+  }, []);
+
+  useMemoSync({
+    onMemos: handleSSEMemos,
+    onMemoDeleted: handleSSEMemoDeleted,
+    isReady: !isHydrating,
+  });
 
   const pendingCount = memos.reduce(
     (count, memo) => (memo.status === 'synced' ? count : count + 1),
@@ -229,13 +444,63 @@ export default function App() {
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-xl flex-col px-4 sm:px-6">
         <Header status={connection} pendingCount={pendingCount} isSyncing={isSyncing} />
 
+        {/* View Switcher: Stream vs Calendar */}
+        <div className="mb-4 flex items-center justify-center">
+          <div className="inline-flex rounded-xl border border-lumos-line/60 bg-lumos-surface/80 p-1 shadow-sm backdrop-blur-md">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('stream');
+              }}
+              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
+                activeTab === 'stream'
+                  ? 'border border-lumos-accent/30 bg-lumos-accent/15 text-lumos-accent shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <MessageSquareText className="h-3.5 w-3.5" />
+              <span>Memos</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('calendar');
+              }}
+              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
+                activeTab === 'calendar'
+                  ? 'border border-lumos-accent/30 bg-lumos-accent/15 text-lumos-accent shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+              <span>Kalender</span>
+            </button>
+          </div>
+        </div>
+
         <main className="flex-1">
-          <Composer onSubmit={handleDump} />
-          <MemoStream memos={memos} isLoading={isHydrating} />
+          {activeTab === 'stream' ? (
+            <>
+              <Composer onSubmit={handleDump} />
+              <MemoStream
+                memos={memos}
+                isLoading={isHydrating}
+                selectedTag={selectedTag}
+                onSelectTag={setSelectedTag}
+                onToggleComplete={handleToggleComplete}
+                onArchive={handleArchiveMemo}
+                onDelete={handleDeleteMemo}
+                onRestore={handleRestoreMemo}
+                onPermanentDelete={handlePermanentDeleteMemo}
+              />
+            </>
+          ) : (
+            <CalendarView />
+          )}
         </main>
 
         <footer className="pb-dock pt-2 text-center text-[10px] tracking-wide text-zinc-500">
-          Offline-first · disinkronkan ke laptop lewat Tailscale
+          Offline-first · 30 hari sampah · checklist & tag tracker
         </footer>
       </div>
     </div>

@@ -7,6 +7,7 @@ import type { MemoItem, MemoSyncStatus } from '@shared/types';
  * whole queue. `idb-keyval` creates the object store lazily on first write.
  */
 const memoStore = createStore('lumos', 'memo-queue');
+const pendingDeleteStore = createStore('lumos-deletes', 'pending-deletes');
 
 /** Load the queue newest-first. */
 export async function listMemos(): Promise<MemoItem[]> {
@@ -46,6 +47,22 @@ export async function removeMemo(id: string): Promise<void> {
   await del(id, memoStore);
 }
 
+/** Track a memo ID that was deleted locally and needs deletion on the host. */
+export async function queuePendingDelete(id: string): Promise<void> {
+  await set(id, Date.now(), pendingDeleteStore);
+}
+
+/** Clear a pending delete ID once the host confirms deletion. */
+export async function clearPendingDelete(id: string): Promise<void> {
+  await del(id, pendingDeleteStore);
+}
+
+/** List all memo IDs awaiting server-side deletion. */
+export async function getPendingDeleteIds(): Promise<string[]> {
+  const ids = await keys(pendingDeleteStore);
+  return ids.filter((id): id is string => typeof id === 'string');
+}
+
 /** Everything that still needs to reach the host, including retries. */
 export async function getPendingMemos(): Promise<MemoItem[]> {
   const memos = await listMemos();
@@ -68,7 +85,9 @@ function isSameMemo(a: MemoItem, b: MemoItem): boolean {
     a.content === b.content &&
     a.createdAt === b.createdAt &&
     a.status === b.status &&
-    a.kanbanTaskId === b.kanbanTaskId &&
+    Boolean(a.completed) === Boolean(b.completed) &&
+    Boolean(a.archived) === Boolean(b.archived) &&
+    Number(a.deletedAt || 0) === Number(b.deletedAt || 0) &&
     sameTags(a.tags, b.tags)
   );
 }
@@ -81,11 +100,17 @@ function isSameMemo(a: MemoItem, b: MemoItem): boolean {
  * are inserted and already `synced` memos are refreshed from the archive.
  */
 export async function mergeServerMemos(serverMemos: MemoItem[]): Promise<MemoItem[]> {
-  const localMemos = await listMemos();
+  const [localMemos, pendingDeleteIds] = await Promise.all([
+    listMemos(),
+    getPendingDeleteIds(),
+  ]);
+  const deletedSet = new Set(pendingDeleteIds);
   const byId = new Map(localMemos.map((memo) => [memo.id, memo]));
   const writes: Promise<void>[] = [];
 
   for (const serverMemo of serverMemos) {
+    if (deletedSet.has(serverMemo.id)) continue;
+
     const localMemo = byId.get(serverMemo.id);
 
     // `pending`/`syncing` are unpublished work; `failed` still awaits a retry.

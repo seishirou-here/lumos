@@ -79,7 +79,7 @@ export function Header({ status, pendingCount = 0, isSyncing = false }: HeaderPr
           LUMOS
         </h1>
         <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Quick dump · Lumi
+          Memos & Tag Tracker
         </p>
       </div>
 

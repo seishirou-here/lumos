@@ -2,126 +2,135 @@
 
 **Document:** Networking & Connectivity Specification  
 **Status:** Approved & Finalized  
-**Primary Solution:** Tailscale Mesh VPN (Zero-Config WireGuard)  
+**Primary Solution:** Direct Local LAN (Wi-Fi / Mobile Hotspot / mDNS) & Offline-First Sync  
 **Authors:** Papa (Seishirou) & Lumi  
 
 ---
 
-## 1. Overview & Architectural Choice
+## 1. Overview & Architectural Philosophy
 
-To ensure seamless, secure, and boundary-free communication between Papa's mobile phone and the laptop host, **Tailscale** is chosen as the primary networking backbone.
+Project Lumos mengadopsi arsitektur jaringan **Direct Local Network (LAN / Wi-Fi / Hotspot)** murni tanpa ketergantungan pada layanan VPN/mesh pihak ketiga seperti Tailscale.
 
-### Why Tailscale?
-1. **Anywhere Connectivity:** Sync works across any network (cellular data, campus Wi-Fi, home Wi-Fi) without requiring public IP exposure or router port forwarding.
-2. **Stable Identity (MagicDNS & Static IP):** The laptop receives a static private IP (`100.x.y.z`) and a friendly hostname (e.g. `http://dan-laptop:3030`), eliminating issues caused by home router DHCP resets.
-3. **End-to-End Encryption:** Traffic travels over private WireGuard tunnels directly between authorized personal devices.
-4. **Native HTTPS & PWA Compatibility:** Using `tailscale serve`, the host can effortlessly expose valid TLS certificates (`https://<machine>.<tailnet>.ts.net`), satisfying modern mobile browser requirements for Progressive Web Apps (PWA Service Workers, Cache API, and Add-to-Home-Screen).
+### Prinsip Utama:
+1. **Zero Third-Party Dependency:** Komunikasi data sepenuhnya berada di bawah kendali Papa (HP langsung ke Laptop host). Tidak bergantung pada server koordinasi eksternal, akun cloud, atau pihak ketiga.
+2. **True Offline & Intranet Resilience:** Sistem tetap berfungsi penuh meskipun koneksi internet publik mati. Cukup terhubung ke router Wi-Fi lokal yang sama atau tethering Mobile Hotspot langsung dari HP ke Laptop.
+3. **Ultra-Low Latency:** Data ditransfer langsung melalui jaringan lokal berkecepatan tinggi tanpa routing VPN keluar.
+4. **Local CalDAV & Data Sovereignty:** Server Radicale CalDAV dan database SQLite berjalan langsung pada host laptop, menjamin privasi penuh untuk catatan dan kalender akademik Papa.
 
 ---
 
-## 2. Network Topology & Ports
+## 2. Network Topology & Addressing
 
 ```text
-┌────────────────────────────┐               ┌────────────────────────────┐
-│      HP Papa (Client)      │               │     Laptop Papa (Host)     │
-│                            │               │                            │
-│  - Tailscale App (Active)  │               │  - Tailscale Node Running  │
-│  - Lumos PWA in Browser    │               │  - Lumos Bridge Server     │
-│    (Targeting MagicDNS)    │ ────────────► │    Port: 3030 (HTTP)       │
-│                            │   WireGuard   │    Optional: 443 (Serve)   │
-└────────────────────────────┘   Encrypted   └────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                    HP Papa (Client)                    │
+│                                                        │
+│  - Lumos PWA (Mobile Browser / Installed App)          │
+│  - Native Calendar App (iOS Calendar / Android DAVx⁵)  │
+└───────────────────────────┬────────────────────────────┘
+                            │
+               Koneksi Wi-Fi LAN / Hotspot
+             (Subnet Lokal: 192.168.x.x / mDNS)
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                   Laptop Papa (Host)                   │
+│                                                        │
+│  ┌──────────────────────────┐┌───────────────────────┐ │
+│  │ Lumos Bridge Server      ││ Radicale CalDAV Daemon│ │
+│  │ Port: 3030 (REST & SSE)  ││ Port: 5232 (CalDAV)   │ │
+│  └──────────────────────────┘└───────────────────────┘ │
+│  ┌───────────────────────────────────────────────────┐ │
+│  │ SQLite Archive: lumos.db (WAL Mode)               │ │
+│  └───────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────┘
 ```
 
-* **Default Internal Port:** `3030` (configurable via `.env`).
-* **Addressing:**
-  * Direct Tailscale IP: `http://100.x.y.z:3030`
-  * MagicDNS Hostname: `http://<laptop-name>.<tailnet>.ts.net:3030`
-  * Tailscale Serve (HTTPS): `https://<laptop-name>.<tailnet>.ts.net`
+### Metode Resolusi Alamat (Addressing):
+
+| Metode | Format URL / Endpoint | Keunggulan |
+| :--- | :--- | :--- |
+| **mDNS (ZeroConf)** | `http://<nama-laptop>.local:3030` | Nama host stabil tanpa perlu menghafal IP (`dan-laptop.local`). Didukung native di iOS, Android modern, dan Windows. |
+| **Static LAN IP** | `http://192.168.x.x:3030` | Alamat IP lokal laptop yang direservasi melalui DHCP router rumah/kost. |
+| **Hotspot Tethering** | `http://192.168.43.x:3030` | Koneksi langsung saat di luar ruangan (HP mengaktifkan hotspot, laptop tersambung). |
+| **Radicale CalDAV** | `http://<nama-laptop>.local:5232` | Endpoint CalDAV untuk sinkronisasi agenda dan kalender. |
 
 ---
 
-## 3. Communication Protocol & Sync Lifecycle
+## 3. PWA & HTTPS di Jaringan Lokal
 
-### A. Heartbeat & Health Check
-* The mobile client issues periodic background `GET /api/health` pings (e.g., every 15–30 seconds when app is in focus).
-* **Response payload:**
-  ```json
-  {
-    "status": "ok",
-    "service": "lumos-bridge",
-    "version": "1.0.0",
-    "kanban_connected": true
-  }
-  ```
+Browser modern membatasi fitur Progressive Web App (seperti Service Worker dan Cache Storage) hanya pada **Secure Context** (`localhost` atau `https://`). Untuk pemakaian mobile di jaringan lokal:
 
-### B. Offline ➔ Online Sync Flow
-1. **Offline State:**
-   - Laptop is closed/offline or HP has no network:
-   - PWA displays a subtle yellow indicator: `🟡 Offline (Tersimpan di HP)`.
-   - New memos append immediately into local IndexedDB with `sync_status: "pending"`.
-2. **Reconnection State:**
-   - HP detects successful response from `/api/health`.
-   - Status updates to: `🟢 Terhubung ke Laptop`.
-   - Client triggers batch sync (`POST /api/memos/dump`) sending all pending items.
-3. **Sync Acknowledgment:**
-   - Server processes memos, formats them via Lumi Refinement, and injects into Hermes Kanban.
-   - Server returns list of successfully ingested UUIDs.
-   - Client marks items as `sync_status: "synced"` in IndexedDB.
+### Solusi yang Didukung:
 
-### C. Real-time Multi-Device Sync (SSE)
+1. **Local Reverse Proxy dengan SSL (Rekomendasi untuk Produksi):**
+   - Menggunakan reverse proxy lokal ringan seperti **Caddy** atau **Nginx** di laptop dengan sertifikat SSL lokal yang dibuat via `mkcert`.
+   - Menghasilkan URL HTTPS lokal valid: `https://dan-laptop.local:3030` tanpa peringatan browser.
+2. **Flag Browser Mobile (Pengembangan & Testing Cepat):**
+   - Pada Google Chrome Android, buka `chrome://flags/#unsafely-treat-insecure-origin-as-secure`.
+   - Masukkan origin HTTP lokal (misal: `http://192.168.1.50:3030`), restart browser, dan PWA Service Worker akan langsung aktif tanpa sertifikat SSL.
+3. **Tunnel Pribadi Opsional (Akses Jarak Jauh Di Luar LAN):**
+   - Jika Papa membutuhkan akses saat laptop ditinggal di rumah dan HP di luar jangkauan Wi-Fi, dapat dipasangkan Cloudflare Tunnel (`cloudflared`) atau reverse SSH/bore pribadi tanpa perlu mengubah kode internal Lumos.
 
-In addition to the push-then-pull cycle above, Lumos uses **Server-Sent Events (SSE)** for instant cross-device synchronization:
+---
+
+## 4. Siklus Sinkronisasi Offline-to-Online
 
 ```text
-┌─────────────────────────┐               ┌─────────────────────────────────┐
-│    Device A (Client)    │               │     Laptop Host (Server)        │
-│                         │               │                                 │
-│  EventSource ──────────────────────────►│  GET /api/memos/events (SSE)   │
-│  (persistent HTTP)      │               │                                 │
-│                         │               │    ┌────────────────────────┐   │
-│    Device B (Client)    │   POST dump   │    │ EventEmitter pub/sub   │   │
-│  ─────────────────────────────────────► │    │ (in-memory broadcast)  │   │
-│                         │               │    └──────────┬─────────────┘   │
-│    Device A receives    │ ◄──── SSE ────│               │                │
-│    memos_updated event  │               │   event: memos_updated         │
-│    (instant, no poll)   │               │   data: [{id, content, ...}]   │
-└─────────────────────────┘               └─────────────────────────────────┘
+[ HP Menangkap Ide di Luar Jangkauan ]
+                  │
+                  ▼
+[ Tersimpan di IndexedDB (Status: pending) ]
+                  │
+                  ▼
+[ HP Terhubung ke Wi-Fi / Hotspot Laptop ]
+                  │
+                  ├──► PWA Ping GET /api/health ──► [ Terhubung ]
+                  │
+                  ├──► PUSH: POST /api/memos/dump ──► [ Simpan ke SQLite lumos.db ]
+                  │
+                  ├──► PULL: GET /api/memos ───────► [ Update Feed Lokal ]
+                  │
+                  └──► LISTEN: GET /api/memos/events (SSE) ──► [ Real-time Live Stream ]
 ```
 
-**Endpoint:** `GET /api/memos/events`
-
-| Header | Value |
-|---|---|
-| `Content-Type` | `text/event-stream` |
-| `Cache-Control` | `no-cache, no-transform` |
-| `Connection` | `keep-alive` |
-| `X-Accel-Buffering` | `no` |
-
-**Event types:**
-
-| Event | Trigger | Data |
-|---|---|---|
-| `connected` | Initial handshake | `{"status":"ok"}` |
-| `memos_updated` | `POST /api/memos/dump` upserts memos | JSON array of `MemoItem[]` |
-| `:keepalive` | Every 15 seconds | (comment, no data — prevents proxy timeouts) |
-
-**Client behaviour (`useMemoSync` hook):**
-
-1. Opens an `EventSource` to `/api/memos/events` when the app is hydrated and online.
-2. On `memos_updated` → merges incoming memos into IndexedDB + React state via `mergeServerMemos()`.
-3. On error → disconnects and reconnects with exponential back-off (3 s → 6 s → 12 s → … → 30 s max).
-4. On browser `online` event or tab visibility change → resets back-off and reconnects immediately.
-5. If `EventSource` is unavailable (older browsers) → the existing 20-second health-check polling continues to serve as fallback.
+1. **Kondisi Terputus (Offline / Di Luar Rumah):**
+   - Laptop tertutup atau HP tidak berada dalam satu jaringan Wi-Fi:
+   - Header aplikasi menampilkan badge: `🟡 Offline (Tersimpan di HP)`.
+   - Memo yang diketik langsung tersimpan di IndexedDB lokal browser dengan status `pending`.
+2. **Kondisi Tersambung Kembali (Online Reconnection):**
+   - Begitu HP masuk ke jangkauan Wi-Fi yang sama atau tethering aktif:
+   - Polling berkala `GET /api/health` mendeteksi host laptop.
+   - Status berubah seketika: `🟢 Connected`.
+   - PWA secara otomatis mem-flush semua memo antrean lokal ke `POST /api/memos/dump`.
+3. **Konfirmasi & Penyimpanan:**
+   - Server memvalidasi payload dan menyimpannya secara atomik ke database SQLite `lumos.db`.
+   - Klien menandai item lokal sebagai `synced`.
 
 ---
 
-## 4. Security & Access Control
+## 5. Real-Time Multi-Device Sync (Server-Sent Events)
 
-Even though traffic is confined inside Papa's private Tailnet, standard defense-in-depth measures will be applied:
+Lumos menggunakan koneksi persisten **Server-Sent Events (SSE)** untuk sinkronisasi instan antar-perangkat di jaringan lokal:
 
-1. **Bearer Token Authentication:**
-   - Simple shared secret token configured in `.env` (`LUMOS_AUTH_TOKEN`).
-   - Mobile PWA stores this token in localStorage upon initial pairing.
-   - Sent via header: `Authorization: Bearer <LUMOS_AUTH_TOKEN>`.
-2. **CORS Whitelisting:**
-   - Server restricts incoming origins to the Tailscale domain and local development origins (`localhost`, `127.0.0.1`, `*.ts.net`).
+* **Endpoint:** `GET /api/memos/events`
+* **Mekanisme:**
+  - Klien membuka `EventSource` ke server.
+  - Setiap kali ada memo baru yang di-*dump* (baik dari HP maupun langsung di laptop), server memancarkan event `memos_updated`.
+  - Semua perangkat yang sedang membuka Lumos di jaringan lokal menerima update secara *real-time* tanpa perlu me-refresh halaman.
+  - Heartbeat `:keepalive` dikirim setiap 15 detik untuk mencegah pemutusan koneksi oleh router.
+
+---
+
+## 6. Keamanan & Kebijakan CORS
+
+Meskipun berjalan pada jaringan lokal tertutup, keamanan tetap diterapkan secara berlapis:
+
+1. **Subnet Whitelisting:**
+   - Kebijakan CORS server secara otomatis mengizinkan asal dari rentang alamat privat standar RFC 1918:
+     - `192.168.0.0/16`
+     - `10.0.0.0/8`
+     - `172.16.0.0/12`
+     - `localhost`, `127.0.0.1`, dan domain `.local`
+2. **Optional Pre-Shared Auth Token:**
+   - Server dapat dikonfigurasi menggunakan header `Authorization: Bearer <LUMOS_AUTH_TOKEN>` yang disimpan di storage lokal klien untuk mencegah akses tidak sah dari perangkat lain yang berada di Wi-Fi yang sama (misal di jaringan kampus/kafe).

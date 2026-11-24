@@ -18,11 +18,38 @@ Tracked decomposed subtasks for OpenCode & Papa:
   - [x] Setup lightweight SQLite database (`lumos.db`) in `src/server` for persistent memo archiving.
   - [x] Add `GET /api/memos` endpoint in `src/server` to query memo history with pagination.
   - [x] Update `src/web` to merge server history into local IndexedDB feed (bi-directional sync between mobile & laptop).
-- [x] **Task 5: Hermes Kanban Bridge & AI Refinement Ingestion**
+- [x] **Task 5: Hermes Kanban Bridge & AI Refinement Ingestion (UPDATED / DISABLED)**
   - Location: `src/server`
   - [x] Connect dump flow to Lumi Refinement Engine via 9router (`reasoning-lumos`).
-  - [x] Inject refined structured cards into Hermes Kanban `triage` lane (`hermes kanban create`).
-  - [x] Resilient offline fallback (`#unrefined` card) if 9router is unreachable.
+  - [x] Hermes Kanban bridge disabled per user request to allow exploring alternative AI interaction platforms.
+  - [x] AI Refinement engine preserved modularly in `refinement.ts` for future updates.
+- [x] **Task 10: Cancel Hermes Kanban Bridge & Decouple Ingestion**
+  - [x] Remove automatic CLI invocation of `hermes.exe` in `src/server`.
+  - [x] Turn background queue into a disabled no-op; memos are preserved purely in SQLite archive (`lumos.db`).
+  - [x] Keep AI Refinement Engine preserved and ready for on-demand use in future updates.
+- [x] **Task 12: Memo Deletion & Archive System**
+  - Location: `src/web`, `src/server`, `src/shared`
+  - [x] Add `archived` column migration to SQLite `memos` table and `MemoItem` contract.
+  - [x] Add `DELETE /api/memos/:id` and `PATCH /api/memos/:id/archive` endpoints in `src/server`.
+  - [x] Broadcast real-time `memo_deleted` and `memos_updated` events over SSE (`/api/memos/events`).
+  - [x] Add tactile Archive/Restore and two-step Delete actions on `MemoCard.tsx`, plus Active/Archive filter switcher on `MemoStream.tsx`.
+  - [x] Implement offline-resilient pending delete queue in `storage.ts` so offline deletions sync upon reconnection.
+- [ ] **Task 11: Calendar & Scheduling Subsystem (Radicale CalDAV + FullCalendar)**
+  - Location: `src/web`, `src/server`, host configuration
+  - [x] **11.1 Radicale CalDAV Server Setup:**
+    - Configure lightweight Radicale CalDAV server daemon on Papa's laptop (port 5232).
+    - Set up storage backend for standard `.ics` iCalendar records in `src/server/data/radicale_collections`.
+    - Provide `npm run radicale` and `npm run dev:all` scripts in root `package.json`.
+    - Expose over local Wi-Fi / mDNS for mobile synchronization (iOS Calendar / Android DAVx⁵).
+  - [x] **11.2 Frontend FullCalendar Integration:**
+    - Install `@fullcalendar/react` in `src/web`.
+    - Build `CalendarView.tsx` component with seamless tab navigation (Feed Stream vs Calendar).
+    - Skin FullCalendar using Lumos CSS variable tokens (*Kuro Sakura* & *Kuro Midori* OLED dark palette).
+    - Offline-first calendar storage via IndexedDB (`calendarStorage.ts`).
+  - [ ] **11.3 CalDAV Bridge & Event Management:**
+    - Integrate CalDAV client in Lumos bridge/frontend to fetch, create, and update events.
+    - Link calendar events with captured memos/dumps (e.g. converting a quick dump with date/time into a CalDAV event).
+    - Verify bidirectional sync between mobile native calendar apps and Lumos FullCalendar.
 - [x] **Task 6: Live End-to-End Testing & Mobile Tailscale Validation**
   - [x] Connect live 9router auth key (`ROUTER_API_KEY`) for full AI refinement pipeline.
   - [x] Test mobile capture over Tailscale mesh and verify cards landing in Kanban `triage`.

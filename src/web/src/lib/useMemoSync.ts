@@ -19,6 +19,8 @@ const RECONNECT_MAX_MS = 30_000;
 interface UseMemoSyncOptions {
   /** Called when new memos arrive from another device via SSE. */
   onMemos: (memos: MemoItem[]) => void;
+  /** Called when a memo is deleted on another device via SSE. */
+  onMemoDeleted?: (id: string) => void;
   /** Whether the app has finished hydrating from IndexedDB. */
   isReady: boolean;
 }
@@ -34,9 +36,12 @@ interface UseMemoSyncOptions {
  * - Falls back gracefully: if `EventSource` is unavailable, the existing
  *   polling logic in `App.tsx` continues to work as before.
  */
-export function useMemoSync({ onMemos, isReady }: UseMemoSyncOptions): void {
+export function useMemoSync({ onMemos, onMemoDeleted, isReady }: UseMemoSyncOptions): void {
   const onMemosRef = useRef(onMemos);
   onMemosRef.current = onMemos;
+
+  const onMemoDeletedRef = useRef(onMemoDeleted);
+  onMemoDeletedRef.current = onMemoDeleted;
 
   const esRef = useRef<EventSource | null>(null);
   const retriesRef = useRef(0);
@@ -72,6 +77,17 @@ export function useMemoSync({ onMemos, isReady }: UseMemoSyncOptions): void {
         }
       } catch {
         // Malformed event data — ignore and wait for the next one.
+      }
+    });
+
+    es.addEventListener('memo_deleted', (event) => {
+      try {
+        const payload = JSON.parse(event.data) as { id?: unknown };
+        if (typeof payload?.id === 'string' && payload.id.length > 0) {
+          onMemoDeletedRef.current?.(payload.id);
+        }
+      } catch {
+        // Malformed event data — ignore.
       }
     });
 

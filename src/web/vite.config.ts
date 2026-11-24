@@ -44,9 +44,9 @@ export default defineConfig({
       },
       manifest: {
         id: '/',
-        name: 'LUMOS · Quick Dump',
+        name: 'LUMOS · Memos & Tracker',
         short_name: 'Lumos',
-        description: 'Quick dump ide dari HP, dirapikan Lumi di laptop.',
+        description: 'Offline-first memos dengan checklist dan metadata tag tracker.',
         lang: 'id',
         start_url: '/',
         scope: '/',
