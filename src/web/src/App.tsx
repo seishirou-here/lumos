@@ -17,7 +17,7 @@ import {
   subscribeMemos,
   toggleFirestoreMemoComplete,
 } from './lib/firestoreMemos';
-import { createMemoId, extractTags } from './lib/utils';
+import { cn, createMemoId, extractTags, haptic } from './lib/utils';
 
 function LumosWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
   const [activeTab, setActiveTab] = useState<'stream' | 'calendar'>('stream');
@@ -165,34 +165,41 @@ function LumosWorkspace({ onSignOut }: { onSignOut: () => Promise<void> }) {
           </div>
         )}
 
-        {/* View Switcher: Stream vs Calendar */}
-        <div className="mb-4 flex items-center justify-center">
-          <div className="inline-flex rounded-xl border border-lumos-line/60 bg-lumos-surface/80 p-1 shadow-sm backdrop-blur-md">
-            <button
-              type="button"
-              onClick={() => setActiveTab('stream')}
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
-                activeTab === 'stream'
-                  ? 'border border-lumos-accent/30 bg-lumos-accent/15 text-lumos-accent shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <MessageSquareText className="h-3.5 w-3.5" />
-              <span>Memos</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('calendar')}
-              className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
-                activeTab === 'calendar'
-                  ? 'border border-lumos-accent/30 bg-lumos-accent/15 text-lumos-accent shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-200'
-              }`}
-            >
-              <CalendarIcon className="h-3.5 w-3.5" />
-              <span>Kalender</span>
-            </button>
-          </div>
+        {/* View Switcher: Stream vs Calendar (full-width, 44px touch targets) */}
+        <div
+          role="tablist"
+          aria-label="Tampilan"
+          className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-lumos-line/60 bg-lumos-surface/80 p-1 shadow-sm backdrop-blur-md sm:mx-auto sm:w-80"
+        >
+          {(
+            [
+              { id: 'stream', label: 'Memos', Icon: MessageSquareText },
+              { id: 'calendar', label: 'Kalender', Icon: CalendarIcon },
+            ] as const
+          ).map(({ id, label, Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => {
+                  haptic(8);
+                  setActiveTab(id);
+                }}
+                className={cn(
+                  'flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.97]',
+                  isActive
+                    ? 'border-lumos-accent/30 bg-lumos-accent/15 text-lumos-accent shadow-sm'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 active:bg-lumos-elevated',
+                )}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            );
+          })}
         </div>
 
         <main className="flex-1">

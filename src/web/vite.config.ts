@@ -14,6 +14,8 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'icon.svg', 'manifest.webmanifest'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        // Web Push + notification click handlers (FCM data messages).
+        importScripts: ['/push-sw.js'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/__/],
         runtimeCaching: [

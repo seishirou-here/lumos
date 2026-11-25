@@ -17,5 +17,10 @@ service cloud.firestore {
     match /calendarEvents/{eventId} {
       allow read, write: if isOwner();
     }
+
+    // FCM Web Push tokens for the owner's devices (phone notifications & reminders).
+    match /pushTokens/{tokenId} {
+      allow read, write: if isOwner();
+    }
   }
 }

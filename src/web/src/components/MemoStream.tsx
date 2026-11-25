@@ -205,7 +205,7 @@ export function MemoStream({
                   haptic(8);
                   onSelectTag?.(undefined);
                 }}
-                className="flex items-center gap-1 text-[10.5px] font-medium text-lumos-accent hover:underline"
+                className="-my-2 -mr-2 flex min-h-9 items-center gap-1 px-2 text-xs font-medium text-lumos-accent hover:underline"
               >
                 Reset filter
                 <X className="h-3 w-3" />
@@ -223,7 +223,7 @@ export function MemoStream({
                   key={stat.tag}
                   onClick={() => handleTagClick(stat.tag)}
                   className={cn(
-                    'group flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all duration-150',
+                    'group flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-[13px] font-medium transition-all duration-150 active:scale-95',
                     isSelected
                       ? 'border-lumos-accent bg-lumos-accent/20 text-lumos-accent shadow-sm shadow-lumos-accent/20 ring-1 ring-lumos-accent/30'
                       : 'border-lumos-line/70 bg-lumos-surface/80 text-zinc-300 hover:border-lumos-line-strong hover:bg-lumos-elevated hover:text-zinc-100',
@@ -250,7 +250,7 @@ export function MemoStream({
       )}
 
       {/* Filter Header and View Tabs */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h2
             id="stream-heading"
@@ -264,74 +264,60 @@ export function MemoStream({
             </span>
           )}
         </div>
-
-        {!isLoading && (
-          <div className="flex flex-wrap items-center gap-1 rounded-full border border-lumos-line bg-lumos-surface p-0.5 text-[10px] font-medium">
-            <button
-              type="button"
-              onClick={() => handleTabChange('active')}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 transition-colors',
-                tab === 'active'
-                  ? 'bg-lumos-accent/20 text-lumos-accent'
-                  : 'text-zinc-400 hover:text-zinc-200',
-              )}
-            >
-              Aktif ({activeCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTabChange('completed')}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 transition-colors',
-                tab === 'completed'
-                  ? 'bg-emerald-500/20 text-emerald-400'
-                  : 'text-zinc-400 hover:text-zinc-200',
-              )}
-            >
-              Selesai ({completedCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTabChange('all')}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 transition-colors',
-                tab === 'all'
-                  ? 'bg-lumos-accent/20 text-lumos-accent'
-                  : 'text-zinc-400 hover:text-zinc-200',
-              )}
-            >
-              Semua ({nonArchived.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTabChange('archived')}
-              className={cn(
-                'flex items-center gap-1 rounded-full px-2.5 py-0.5 transition-colors',
-                tab === 'archived'
-                  ? 'bg-lumos-accent/20 text-lumos-accent'
-                  : 'text-zinc-400 hover:text-zinc-200',
-              )}
-            >
-              <Archive className="h-2.5 w-2.5" aria-hidden="true" />
-              <span>Arsip ({archivedCount})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTabChange('trash')}
-              className={cn(
-                'flex items-center gap-1 rounded-full px-2.5 py-0.5 transition-colors',
-                tab === 'trash'
-                  ? 'bg-rose-500/20 text-rose-300'
-                  : 'text-zinc-400 hover:text-zinc-200',
-              )}
-            >
-              <Trash2 className="h-2.5 w-2.5" aria-hidden="true" />
-              <span>Sampah ({trashCount})</span>
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Status tabs: horizontally scrollable chips with 40px touch targets */}
+      {!isLoading && (
+        <div
+          role="tablist"
+          aria-label="Filter memo"
+          className="scrollbar-none -mx-4 mb-3 flex snap-x gap-1.5 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0"
+        >
+          {(
+            [
+              { id: 'active', label: 'Aktif', count: activeCount, Icon: Sparkles },
+              { id: 'completed', label: 'Selesai', count: completedCount, Icon: CheckCircle2 },
+              { id: 'all', label: 'Semua', count: nonArchived.length, Icon: null },
+              { id: 'archived', label: 'Arsip', count: archivedCount, Icon: Archive },
+              { id: 'trash', label: 'Sampah', count: trashCount, Icon: Trash2 },
+            ] as const
+          ).map(({ id, label, count, Icon }) => {
+            const isActive = tab === id;
+            const activeTone =
+              id === 'completed'
+                ? 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300'
+                : id === 'trash'
+                  ? 'border-rose-500/35 bg-rose-500/15 text-rose-300'
+                  : 'border-lumos-accent/35 bg-lumos-accent/15 text-lumos-accent';
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => handleTabChange(id)}
+                className={cn(
+                  'flex min-h-10 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-medium transition-[background-color,border-color,color,transform] duration-150 active:scale-95',
+                  isActive
+                    ? activeTone
+                    : 'border-lumos-line bg-lumos-surface/80 text-zinc-400 hover:text-zinc-200 active:bg-lumos-elevated',
+                )}
+              >
+                {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+                <span>{label}</span>
+                <span
+                  className={cn(
+                    'min-w-[1.25rem] rounded-full px-1.5 text-center text-[11px] font-semibold tabular-nums',
+                    isActive ? 'bg-black/25' : 'bg-zinc-800/80 text-zinc-400',
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {isLoading ? (
         <StreamSkeleton />

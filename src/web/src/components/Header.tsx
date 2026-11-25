@@ -2,6 +2,7 @@ import { LogOut, Sparkles } from 'lucide-react';
 
 import { THEME_META, useTheme } from '../lib/theme';
 import { cn, haptic } from '../lib/utils';
+import { NotificationButton } from './NotificationButton';
 
 export type ConnectionStatus = 'checking' | 'online' | 'offline';
 
@@ -90,7 +91,7 @@ export function Header({
           </span>
           LUMOS
         </h1>
-        <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
+        <p className="mt-1.5 truncate text-[10px] font-medium uppercase tracking-[0.2em] text-zinc-500">
           Cloud Memos &amp; #agy Inbox
         </p>
       </div>
@@ -159,6 +160,8 @@ export function Header({
           />
           <span>{label}</span>
         </div>
+
+        <NotificationButton />
 
         {onSignOut && (
           <button

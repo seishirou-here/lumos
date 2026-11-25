@@ -77,6 +77,12 @@ A clean, modern recreation inspired by flomo/useMemos built purely with Tailwind
 3. **Keyboard Convenience:**
    - Desktop/Laptop: `Ctrl + Enter` (or `Cmd + Enter`) triggers instant dump.
    - Mobile: Big tactile primary button with subtle haptic tap feedback.
+4. **Touch Target Minimums (v0.3.1):**
+   - Primary navigation (Memos / Kalender switcher): full-width segmented control, ≥ 44px tall (`min-h-11`), 14px label.
+   - Secondary tabs (Aktif / Selesai / Semua / Arsip / Sampah): single-row horizontally scrollable chips, ≥ 40px tall (`min-h-10`), 13px label + count badge. Never wrap into tiny multi-row pills.
+   - Inline chips & text actions (tags, Reset filter, icon buttons): ≥ 36px (`min-h-9` / `h-9 w-9`).
+5. **Phone Notifications (🔔 in header):**
+   - Opt-in panel: enable → local test → disable. iOS shows an "Add to Home Screen" hint because Web Push only works in installed PWAs.
 
 ---
 

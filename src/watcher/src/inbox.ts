@@ -2,6 +2,7 @@ import type { AgyStatus, MemoItem } from '../../shared/types.js';
 
 import { getFirestoreDb } from './firebase.js';
 import { sendWindowsToast } from './notify.js';
+import { sendPushToAllDevices } from './push.js';
 
 function formatTime(epochMs: number): string {
   return new Date(epochMs).toLocaleString('id-ID', {
@@ -117,11 +118,37 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'test-push') {
+    const custom = args.slice(1).join(' ').trim();
+    const result = await sendPushToAllDevices({
+      title: 'Lumos · Tes notifikasi dari laptop',
+      body: custom || 'Push FCM berhasil sampai ke HP. Siap dipakai buat reminder 🔔',
+      tag: 'lumos-test',
+    });
+
+    if (result.total === 0) {
+      console.log(
+        'Belum ada HP terdaftar. Buka Lumos di HP → ikon 🔔 di header → "Aktifkan notifikasi".',
+      );
+      return;
+    }
+
+    console.log(
+      `Push terkirim ke ${result.sent}/${result.total} perangkat` +
+        (result.pruned > 0 ? ` (${result.pruned} token kedaluwarsa dihapus)` : '') +
+        '.',
+    );
+    for (const err of result.errors) console.log(`  - ${err}`);
+    if (result.sent === 0) process.exitCode = 1;
+    return;
+  }
+
   console.log(`Usage:
   inbox list [--json]
   inbox done <memoId> [note...] [--complete]
   inbox dismiss <memoId> [note...]
-  inbox test-toast`);
+  inbox test-toast
+  inbox test-push [message...]`);
 }
 
 main().catch((error) => {

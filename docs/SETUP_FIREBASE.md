@@ -59,3 +59,13 @@ Buka URL `https://<your-project-id>.web.app` di HP → Login Google → *Add to 
 - `npm run watcher:start` — hidupkan lagi & aktifkan kembali auto-start.
 - `npm run inbox:list` — lihat semua memo `#agy` yang masih pending.
 - `npm run inbox:toast` — tes native Windows Toast notification.
+- `npm run push:test` — kirim push FCM tes dari laptop ke semua HP yang sudah mengaktifkan 🔔.
+
+## 7. Notifikasi HP (FCM Web Push, gratis)
+1. `npm run deploy` (rules `pushTokens` + PWA terbaru).
+2. Di HP buka Lumos → ikon 🔔 di header → **Aktifkan notifikasi** → izinkan → **Kirim tes notifikasi**.
+   - **Android:** Chrome/Brave langsung bisa; lebih stabil kalau Lumos di-*Install app*.
+   - **iPhone (iOS 16.4+):** wajib Safari → Share → *Add to Home Screen*, lalu buka dari ikon Home Screen.
+3. Di laptop: `npm run push:test` (opsional: `npm run push:test -- "pesan custom"`).
+4. Kalau error `messaging/...` soal API: pastikan **Firebase Cloud Messaging API (V1)** aktif di Google Cloud Console project ini.
+5. Opsional: pakai VAPID key sendiri (Project settings → Cloud Messaging → *Web Push certificates*) → isi `VITE_FIREBASE_VAPID_KEY` di `src/web/.env`.

@@ -26,6 +26,7 @@
     "watcher:status": "node src/watcher/dist/watcher/src/control.js status",
     "inbox:list": "node src/watcher/dist/watcher/src/inbox.js list",
     "inbox:toast": "node src/watcher/dist/watcher/src/inbox.js test-toast",
+    "push:test": "npm run build:watcher && node src/watcher/dist/watcher/src/inbox.js test-push",
     "deploy": "npm run build:web && npx firebase-tools deploy"
   },
   "devDependencies": {

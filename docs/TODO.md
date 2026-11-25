@@ -8,7 +8,21 @@ Tracked subtasks for Papa & Lumi:
 - [x] **Task 12:** Memo checklist (`completed`), tag tracker, archive/restore, and 30-day soft-delete trash system.
 - [x] **Task 11.2:** FullCalendar UI (`CalendarView.tsx`) styled with Lumos OLED dark palette.
 
-## Active Milestone (v0.3 — Full Cloud Firestore + `#agy` Always-On Watcher)
+## Active Milestone (v0.3.1 — Mobile Ergonomics + Phone Notifications Foundation)
+- [x] **Task 14.1: Mobile Tab Touch Targets**
+  - [x] Memos/Kalender switcher → full-width segmented control, 44px (`min-h-11`) targets.
+  - [x] Memo status tabs (Aktif/Selesai/Semua/Arsip/Sampah) → horizontally scrollable chips, 40px (`min-h-10`), 13px labels + count badges.
+  - [x] Tag Tracker chips & "Reset filter" bumped to 36px (`min-h-9`).
+- [x] **Task 14.2: Phone Notifications Foundation (FCM Web Push, Spark free)**
+  - [x] `public/push-sw.js` imported into the Workbox SW (`push` + `notificationclick`).
+  - [x] `lib/push.ts` + 🔔 `NotificationButton` in header (enable / local test / disable, iOS Home Screen hint).
+  - [x] Device tokens stored in owner-locked `pushTokens/{sha256(token)}`.
+  - [x] Watcher `push.ts` (`sendPushToAllDevices`, stale-token pruning) + `npm run push:test`.
+- [ ] **Task 14.3: Validate on Papa's phone**
+  - [ ] `npm run deploy` (rules + hosting) → enable 🔔 on phone → local test → `npm run push:test` from laptop.
+- [ ] **Task 14.4 (Pending): Calendar improvements** — resume after UI fixes.
+
+## Milestone v0.3 — Full Cloud Firestore + `#agy` Always-On Watcher
 - [x] **Task 13.1: Checkpoint & Architecture Docs Update**
   - [x] Commit v0.2.0 checkpoint (`1376c46`).
   - [x] Update `TECH_SPEC.md`, `NETWORKING.md`, `TECH_STACK.md`, `TODO.md`, and create `SETUP_FIREBASE.md`.
@@ -34,4 +48,4 @@ Tracked subtasks for Papa & Lumi:
 
 ## Future Roadmap (See `docs/ROADMAP.md`)
 - [ ] **Phase 2:** Semester Timeline View (`#kuliah`, `#event`, `#personal`).
-- [ ] **Phase 3:** PWA Web Push Notifications & Reminders.
+- [ ] **Phase 3:** Scheduled reminders on top of the FCM foundation (pick sender: laptop watcher vs. free GitHub Actions cron).
