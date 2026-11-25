@@ -8,10 +8,12 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment files
+# Environment & personal Firebase config (use *.example templates in git)
 .env
 .env.*
 !.env.example
+.firebaserc
+firestore.rules
 
 # Logs
 logs/
@@ -27,8 +29,8 @@ coverage/
 # Vite cache
 .vite/
 
-# Local SQLite archive & watcher state (runtime data, never committed)
-src/server/data/
+# Local runtime data & archived local-only server (kept locally, not pushed)
+src/server/
 src/watcher/data/
 *.db
 *.db-journal
@@ -41,12 +43,13 @@ firestore-debug.log
 *service-account*.json
 firebase-adminsdk-*.json
 
+# Local agent instructions & raw prompts
+GEMINI.md
+prompt/
+
 # Editors & operating systems
 .vscode/*
 !.vscode/extensions.json
 .idea/
 .DS_Store
 Thumbs.db
-
-docs/
-prompt/

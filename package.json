@@ -9,16 +9,13 @@
   },
   "workspaces": [
     "src/web",
-    "src/server",
     "src/watcher"
   ],
   "scripts": {
     "dev": "npm run dev:web",
     "dev:web": "npm run dev -w @lumos/web",
-    "dev:server": "npm run dev -w @lumos/server",
     "build": "npm run build:web && npm run build:watcher",
     "build:web": "npm run build -w @lumos/web",
-    "build:server": "npm run build -w @lumos/server",
     "build:watcher": "npm run build -w @lumos/watcher",
     "preview": "npm run preview -w @lumos/web",
     "typecheck": "npm run typecheck -w @lumos/web && npm run typecheck -w @lumos/watcher",

@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Copy this file to `firestore.rules` and replace with your verified Google email
+    // before deploying: `npm run deploy`
+    function isOwner() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == "YOUR_EMAIL@gmail.com";
+    }
+
+    match /memos/{memoId} {
+      allow read, write: if isOwner();
+    }
+
+    match /calendarEvents/{eventId} {
+      allow read, write: if isOwner();
+    }
+  }
+}
